@@ -1,0 +1,10 @@
+EP2300 Project README
+======================
+This project is based on PeerSim (http://peersim.sourceforge.net/). It expends
+PeerSim to provide a framework for evaluating protocols for distributed monitoring.
+
+It uses java.lang.instrument.Instrumentation to measure the size of protocol messages. 
+After normal compilations, to run the code use the following command, assuming that 
+(1) you run from the project root and (2) 'bin' is a folder you store your compiled Java classes.
+
+java -cp libs/djep-1.0.0.jar:libs/jep-2.3.0.jar:bin -ea -javaagent:libs/sizeobj.jar peersim.Simulator main.cfg
