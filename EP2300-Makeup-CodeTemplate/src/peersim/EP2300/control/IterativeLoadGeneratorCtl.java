@@ -90,7 +90,11 @@ public class IterativeLoadGeneratorCtl extends ControlEvent {
 		for (int i = firstIndexThisRound; i < traces.size(); i++) {
 
 			ResponseTimeTrace trace = traces.get(i);
-
+			/*
+			 * DEVIL here the actual load generated and send to a node. Thus, it
+			 * could be considered as message from internal and we should
+			 * determine the message type
+			 */
 			ResponseTimeArriveMessage arriveMsg = new ResponseTimeArriveMessage(
 					trace.getResponseTime());
 			Node dest = NodeUtils.getInstance().getNodeByID(trace.getNodeId());
@@ -116,22 +120,21 @@ public class IterativeLoadGeneratorCtl extends ControlEvent {
 
 		// only load trace in the beginning or when it is needed
 		if (CommonState.getTime() == 0
-				|| (traces.size() > 0 && traces.get(traces.size() - 1).getTimeStamp()
-						- CommonState.getTime() < 2 * Configuration
+				|| (traces.size() > 0 && traces.get(traces.size() - 1)
+						.getTimeStamp() - CommonState.getTime() < 2 * Configuration
 						.getInt("LOAD_TRACES_EVERY"))) {
 			int firstIndexThisRound = traces.size();
 			// 1. fetch traces
 			int fetchCount = fetchTraces();
 
-			if (fetchCount > 0)
-			{
+			if (fetchCount > 0) {
 				// 2. execute newly fetch traces
 				executeTraces(firstIndexThisRound);
-	
+
 				Debugger.debug("At time " + CommonState.getTime()
 						+ " - Next set of traces from "
-						+ traces.get(firstIndexThisRound).getTimeStamp() + " to "
-						+ traces.get(traces.size() - 1).getTimeStamp()
+						+ traces.get(firstIndexThisRound).getTimeStamp()
+						+ " to " + traces.get(traces.size() - 1).getTimeStamp()
 						+ " are loaded");
 			}
 		}
