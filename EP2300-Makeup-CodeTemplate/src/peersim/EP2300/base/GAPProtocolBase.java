@@ -42,6 +42,7 @@ public class GAPProtocolBase {
 
     protected void sendWithInstTransport(Node src, Node dest, Object event) {
 	int pid = Configuration.getPid("ACTIVE_PROTOCOL");
+	
 	InstantaneousTransport t = (InstantaneousTransport) src
 	    .getProtocol(FastConfig.getTransport(pid));
 	t.send(src, dest, event, pid);
