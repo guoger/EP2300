@@ -4,6 +4,7 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 
 import peersim.EP2300.base.GAPProtocolBase;
+import peersim.EP2300.message.ResponseTimeArriveMessage;
 import peersim.EP2300.message.UpdateVector;
 import peersim.EP2300.util.NodeStateVector;
 import peersim.cdsim.CDProtocol;
@@ -15,8 +16,8 @@ public class GAPServerWithRateLimit extends GAPProtocolBase implements
 
 	// TODO need to be initialized by init control
 	// ********************************************
-	public int parent;
-	public int me;
+	public double parent;
+	public double me;
 	public double level;
 	public float aggregate;
 	// ********************************************
@@ -58,10 +59,10 @@ public class GAPServerWithRateLimit extends GAPProtocolBase implements
 	public boolean refreshState() {
 		// Maintain spanning tree and calculate new local aggregate
 		double minLevel = Double.POSITIVE_INFINITY;
-		int minID = parent;
+		double minID = parent;
 		float aggregate = 0;
 		for (Entry<Integer, NodeStateVector> entry : neighborList.entrySet()) {
-			int id = entry.getKey();
+			double id = entry.getKey();
 			NodeStateVector nodeStateVecotr = entry.getValue();
 			// compute subtree aggregate value
 			if (nodeStateVecotr.status.equals("child")) {
@@ -108,6 +109,13 @@ public class GAPServerWithRateLimit extends GAPProtocolBase implements
 		 * indicating the change of aggregate 2) node: update state from
 		 * neightbor/child/parent
 		 */
+		if (event instanceof ResponseTimeArriveMessage) {
+			// TODO message from internal load generator, update aggregate value
+			// and send out updatevector
+		} else if (event instanceof UpdateVector) {
+			// TODO message from other nodes, update table accordingly and send
+			// out message
+		}
 
 	}
 
@@ -115,7 +123,7 @@ public class GAPServerWithRateLimit extends GAPProtocolBase implements
 	public void nextCycle(Node node, int protocolID) {
 		// Implement your cycle-driven code for task 1 here
 		/*
-		 * nextCycle is implemented here to reset message budget
+		 * TODO nextCycle is implemented here to reset message budget
 		 */
 	}
 

@@ -2,7 +2,7 @@ package peersim.EP2300.control;
 
 import peersim.core.Control;
 
-public class GAPTreeInitializer implements Control {
+public class GAPNetworkInitializer implements Control {
 
 	@Override
 	public boolean execute() {
