@@ -1,5 +1,8 @@
 package peersim.EP2300.message;
 
+/*
+ * message structure to be sent among nodes
+ */
 public class UpdateVector {
 	private double id;
 	private double level;
