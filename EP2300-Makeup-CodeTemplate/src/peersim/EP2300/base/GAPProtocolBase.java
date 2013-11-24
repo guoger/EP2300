@@ -15,42 +15,43 @@ import peersim.core.Node;
  */
 public class GAPProtocolBase {
 
-    /**
-     * Estimated value of f(t). Write your estimation here for the root node.
-     */
-    protected long estimatedMax;
+	/**
+	 * TODO Estimated value of f(t). Write your estimation here for the root
+	 * node.
+	 */
+	protected long estimatedMax;
 
-    public long getEstimatedMax() {
-	return estimatedMax;
-    }
-    
-    /**
-     * Estimated value of g(t). Write your estimation here for the root node.
-     */
-    protected double estimatedAverage;
+	public long getEstimatedMax() {
+		return estimatedMax;
+	}
 
-    public double getEstimatedAverage() {
-	return estimatedAverage;
-    }
+	/**
+	 * TODO Estimated value of g(t). Write your estimation here for the root
+	 * node.
+	 */
+	protected double estimatedAverage;
 
-    protected String prefix;
-    
+	public double getEstimatedAverage() {
+		return estimatedAverage;
+	}
 
-    public GAPProtocolBase(String prefix) {
-	this.prefix = prefix;
-    }
+	protected String prefix;
 
-    protected void sendWithInstTransport(Node src, Node dest, Object event) {
-	int pid = Configuration.getPid("ACTIVE_PROTOCOL");
-	
-	InstantaneousTransport t = (InstantaneousTransport) src
-	    .getProtocol(FastConfig.getTransport(pid));
-	t.send(src, dest, event, pid);
-    }
+	public GAPProtocolBase(String prefix) {
+		this.prefix = prefix;
+	}
 
-    public GAPProtocolBase clone() {
-	return new GAPProtocolBase(prefix);
+	protected void sendWithInstTransport(Node src, Node dest, Object event) {
+		int pid = Configuration.getPid("ACTIVE_PROTOCOL");
 
-    }
+		InstantaneousTransport t = (InstantaneousTransport) src
+				.getProtocol(FastConfig.getTransport(pid));
+		t.send(src, dest, event, pid);
+	}
+
+	public GAPProtocolBase clone() {
+		return new GAPProtocolBase(prefix);
+
+	}
 
 }

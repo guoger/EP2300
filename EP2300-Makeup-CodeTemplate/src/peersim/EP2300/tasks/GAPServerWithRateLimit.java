@@ -104,8 +104,9 @@ public class GAPServerWithRateLimit extends GAPProtocolBase implements
 	public void processEvent(Node node, int pid, Object event) {
 		// Implement your event-driven code for task 1 here
 		/*
-		 * in task 1, message occurs when local value (response time) is changed
-		 * using ResponseTimeArriveMessage class, along with stateVector
+		 * in task 1, message comes from: 1) control: ResponseTimeArriveMessage,
+		 * indicating the change of aggregate 2) node: update state from
+		 * neightbor/child/parent
 		 */
 
 	}
