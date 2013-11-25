@@ -55,12 +55,9 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		 */
 
 		if (event instanceof ResponseTimeArriveMessage) {
-			// TODO message from internal load generator, update local value,
-			// compute new aggregate value
-			// and send out updated vector to all neighbors (potentially could
-			// only send it to parent to reduce overhead)
 			final ResponseTimeArriveMessage loadChangeMsg = (ResponseTimeArriveMessage) event;
 			this.value = loadChangeMsg.getResponseTime();
+			// System.out.print("Load change: " + this.value);
 			long oldAgg = this.aggregate;
 			computeAggregate();
 			if (this.aggregate != oldAgg) {
@@ -68,6 +65,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			}
 		} else if (event instanceof UpdateVector) {
 			final UpdateVector msg = (UpdateVector) event;
+			// System.out.println("Receive msg from neighbor");
 			updateEntry(msg);
 			boolean findNewParent = findNewParent();
 			long oldAgg = this.aggregate;
@@ -87,6 +85,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	 * @param pid
 	 */
 	private void sendMsg(Node node, int pid) {
+		// System.out.println("Have msg budget" + this.msgBudget);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));
 		UpdateVector newMessage = composeMessage(node);

@@ -1,7 +1,9 @@
 package peersim.EP2300.vector;
 
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 import peersim.EP2300.base.GAPProtocolBase;
 import peersim.EP2300.message.UpdateVector;
@@ -10,9 +12,6 @@ import peersim.core.Node;
 import peersim.core.Protocol;
 
 public class GAPNode extends GAPProtocolBase implements Protocol {
-
-	// TODO need to be initialized by init control
-	// ********************************************
 	protected double parent;
 	public double me;
 	protected double level;
@@ -22,6 +21,22 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	// ********************************************
 
 	public SortedMap<Double, NodeStateVector> neighborList;
+
+	// *********************************************
+	// ***set initial values, set by initializer****
+	public void setInit(double nodeId) {
+		this.me = nodeId;
+		if (nodeId == 0) {
+			// I'm root
+			this.level = 0;
+			this.parent = 0;
+		} else {
+			this.parent = Double.POSITIVE_INFINITY;
+			this.level = Double.POSITIVE_INFINITY;
+		}
+		this.value = 0;
+		this.aggregate = 0;
+	}
 
 	// TODO it will bring some benefits if we divide table into three separate
 	// map: children, parent, peers
@@ -59,6 +74,11 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	}
 
 	public boolean findNewParent() {
+		if (this.me == 0)
+			// I'm root, I don't have parent
+			return false;
+		if (this.neighborList.isEmpty())
+			return false;
 		double minLevel = Double.POSITIVE_INFINITY;
 		double newParent = this.parent;
 		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
@@ -74,12 +94,33 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		}
 
 		if (newParent != this.parent) {
-			// found a shorter path to root, update parent
-			this.neighborList.get(this.parent).status = "peer";
-			this.parent = newParent;
-			this.level = minLevel + 1;
-			this.neighborList.get(newParent).status = "parent";
-			return true;
+			if (this.parent != Double.POSITIVE_INFINITY) {
+				/*
+				 * Found a shorter path to root, and current parent exist:
+				 * replace parent with new one
+				 */
+				Iterator iterator = this.neighborList.keySet().iterator();
+				while (iterator.hasNext()) {
+					Object key = iterator.next();
+					// System.out.println("key : " + key + " value :"
+					// + this.neighborList.get(key).status + " | "
+					// + this.neighborList.get(key).level + " | "
+					// + this.neighborList.get(key).aggregate);
+				}
+				this.neighborList.get(this.parent).status = "peer";
+				this.parent = newParent;
+				this.level = minLevel + 1;
+				this.neighborList.get(newParent).status = "parent";
+				return true;
+			} else {
+				/*
+				 * There's no valid parent yet
+				 */
+				this.parent = newParent;
+				this.level = minLevel + 1;
+				this.neighborList.get(this.parent).status = "parent";
+				return true;
+			}
 		} else {
 			// otherwise, remain the same
 			return false;
@@ -92,6 +133,10 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	 */
 	public long computeAggregate() {
 		long agg = 0;
+		if (neighborList.isEmpty()) {
+			this.aggregate = this.value;
+			return this.aggregate;
+		}
 		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
 			double id = entry.getKey();
 			NodeStateVector nodeStateVector = entry.getValue();
@@ -100,7 +145,11 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			}
 		}
 		agg += this.value;
+		// System.out.println("New agg value" + this.value);
 		this.aggregate = agg;
+		if (this.me == 0) {
+			this.estimatedMax = this.aggregate;
+		}
 		return agg;
 	}
 
@@ -114,6 +163,6 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 
 	public GAPNode(String prefix) {
 		super(prefix);
+		this.neighborList = new TreeMap<Double, NodeStateVector>();
 	}
-
 }
