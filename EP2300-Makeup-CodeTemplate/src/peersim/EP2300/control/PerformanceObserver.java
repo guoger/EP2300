@@ -2,6 +2,7 @@ package peersim.EP2300.control;
 
 import java.io.File;
 import java.util.List;
+
 import peersim.EP2300.base.GAPProtocolBase;
 import peersim.EP2300.base.MessageTraceStats;
 import peersim.EP2300.base.ResponseTimeTrace;
@@ -33,15 +34,15 @@ public class PerformanceObserver implements Control {
 
 	private String outResultFile;
 	private String outputFolder;
-	
+
 	private long actualMax;
 	private long estimatedMax;
 	private long estimationMaxError;
-	
+
 	private double actualAverage;
-	private double estimatedAverage;	
+	private double estimatedAverage;
 	private double estimationAverageError;
-	
+
 	private double maxMessageRate;
 	private double overhead;
 
@@ -76,7 +77,7 @@ public class PerformanceObserver implements Control {
 		long maxResponseTime = 0;
 		double sumResponseTimes = 0;
 		double numResponseTimes = 0;
-		
+
 		for (ResponseTimeTrace trace : traces) {
 			// measure only within the time window
 			if (trace.getTimeStamp() >= startTime
@@ -91,10 +92,11 @@ public class PerformanceObserver implements Control {
 			if (trace.getTimeStamp() >= endTime)
 				break;
 		}
-		
+
 		actualMax = maxResponseTime;
+		System.out.println(numResponseTimes);
 		actualAverage = sumResponseTimes / numResponseTimes;
-		
+
 		// remove unused traces that are before start time
 		while (!traces.isEmpty()) {
 			ResponseTimeTrace trace = traces.get(0);
@@ -105,7 +107,6 @@ public class PerformanceObserver implements Control {
 		}
 
 	}
-
 
 	private void measureRequests() {
 		getActualMeasurementsFromTrace();
@@ -127,7 +128,6 @@ public class PerformanceObserver implements Control {
 
 		estimatedAverage = rootProtocol.getEstimatedAverage();
 		estimationAverageError = Math.abs(actualAverage - estimatedAverage);
-
 
 	}
 
@@ -154,7 +154,7 @@ public class PerformanceObserver implements Control {
 		long sum = MessageTraceStats.getInstance().getSumStat();
 		long numLinks = MessageTraceStats.getInstance().getNumLinks();
 		double measuredTimesInSecond = getOverheadMeasuredTimeInSeconds();
-		
+
 		// compute average of #messages from all links
 		double overhead = (sum) / (measuredTimesInSecond * numLinks);
 		return overhead;
@@ -174,10 +174,10 @@ public class PerformanceObserver implements Control {
 				.format("At sec %.0f - f = %d, est_f = %d, err_f = %d, g = %.3f, est_g = %.3f, err_g = %.3f, r = %.3f, o = %.3f",
 						CommonState.getTime()
 								/ (double) Configuration
-										.getInt("TIMES_ONE_SECOND"),
-						actualMax, estimatedMax, estimationMaxError,
-						actualAverage, estimatedAverage, estimationAverageError
-						, maxMessageRate, overhead);
+										.getInt("TIMES_ONE_SECOND"), actualMax,
+						estimatedMax, estimationMaxError, actualAverage,
+						estimatedAverage, estimationAverageError,
+						maxMessageRate, overhead);
 
 		System.out.println(output);
 
@@ -185,17 +185,16 @@ public class PerformanceObserver implements Control {
 				"%.0f %d %d %d %.3f %.3f %.3f %.3f %.3f\n",
 				CommonState.getTime()
 						/ (double) Configuration.getInt("TIMES_ONE_SECOND"),
-				actualMax, estimatedMax, estimationMaxError,
-				actualAverage, estimatedAverage, estimationAverageError,
-				maxMessageRate, overhead);
+				actualMax, estimatedMax, estimationMaxError, actualAverage,
+				estimatedAverage, estimationAverageError, maxMessageRate,
+				overhead);
 
 		FileIO.append(writeOutResult, outResultFile);
 
 	}
 
 	public boolean execute() {
-		if (CommonState.getTime() > 0)
-		{
+		if (CommonState.getTime() > 0) {
 			measureRequests();
 			measureOverhead();
 			printOutput();
