@@ -61,9 +61,49 @@
 % }}}
 \thispagestyle{firststyle}
 \section{Task I}
+\begin{lstlisting}[caption={inspired by \cite{stadler2012protocols}}, numbers=left, frame=single]
+messages:
+(new, n)
+(fail, n)
+(update, n; l; p; a)
+(localvar, x)
+
+procedure GAP( )
+    T := empty table;
+    if v = root then
+        addEntry(root, parent, -1, undef);
+        addEntry(root, self, 0, undef);
+    else
+        addEntry(v, self, undef, undef);
+    end if
+    vector := updateVector();
+    send (update, v; vector) to all neighbors;
+    A.initiate();
+    while true do
+        read message;
+        switch (message)
+            case (new, from):
+                addEntry(from, peer, undef, undef);
+                send (update, v; vector) to from;
+            case (fail, from):
+                removeEntry(from);
+            case (localvar, x):
+                empty;
+            case (update, from; level; parent; aggregate):
+                updateEntry(from; level; parent; aggregate);
+        end switch
+        restoreTableInvariant();
+        A.aggregate(); if (v =root) then A.global();
+        newvector := updateVector();
+        if newvector 6 = vector then
+            send (update, v; newvector) to all neighbors;
+            vector := newvector;
+        end if
+    end while
+    end procedure
+\end{lstlisting}
+
 \begin{itemize}
-    \item pseudo code??
-    \item implementation details
     \item compare performance for $R_1, R_2$
     \begin{itemize}
         \item time series of f~(t) and f(t) for r = \{ 0.2, 0.4, 0.8 \} amd \{$R_1$, $R_2$\} from the first 5 min
@@ -101,5 +141,7 @@
     \item Compare TaskI, II, III
     \item Compare $R_1, R_2$ globally
 \end{itemize}
+\bibliographystyle{ieeetr}
+\bibliography{report}
 
 \end{document}
