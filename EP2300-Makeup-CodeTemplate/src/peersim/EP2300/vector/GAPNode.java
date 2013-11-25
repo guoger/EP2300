@@ -6,16 +6,18 @@ import java.util.SortedMap;
 import peersim.EP2300.base.GAPProtocolBase;
 import peersim.EP2300.message.UpdateVector;
 import peersim.EP2300.util.NodeStateVector;
+import peersim.core.Node;
 import peersim.core.Protocol;
 
 public class GAPNode extends GAPProtocolBase implements Protocol {
 
 	// TODO need to be initialized by init control
 	// ********************************************
-	public double parent;
+	protected double parent;
 	public double me;
-	public double level;
-	public long aggregate;
+	protected double level;
+	public long value; // local value (response time)
+	protected long aggregate; // sum of subtree (including self)
 
 	// ********************************************
 
@@ -31,22 +33,29 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	 * return false
 	 */
 	public void updateEntry(UpdateVector msg) {
-		double id = msg.id;
-		double parent = msg.parent;
-		double level = msg.level;
+		if (msg.sender == null) {
+			return;
+			// should never happen since we don't acknowledge msg in GAP
+		}
+		double srcParent = msg.parent;
+		double srcId = msg.sender.getID();
 		long aggregate = msg.aggregate;
+		double senderLevel = msg.level;
 		NodeStateVector nodeStateVector = null;
-		if (parent == this.me) {
-			// message from child
-			nodeStateVector = new NodeStateVector("child", level, aggregate);
-		} else if (id == this.parent) {
+		if (srcParent == this.me) {
+			// message from child (both new and old)
+			nodeStateVector = new NodeStateVector("child", senderLevel,
+					aggregate);
+		} else if (srcId == this.parent) {
 			// message from parent
-			nodeStateVector = new NodeStateVector("parent", level, aggregate);
+			nodeStateVector = new NodeStateVector("parent", senderLevel,
+					aggregate);
 		} else {
 			// message from peer
-			nodeStateVector = new NodeStateVector("peer", level, aggregate);
+			nodeStateVector = new NodeStateVector("peer", senderLevel,
+					aggregate);
 		}
-		this.neighborList.put(id, nodeStateVector);
+		this.neighborList.put(srcId, nodeStateVector);
 	}
 
 	public boolean findNewParent() {
@@ -54,12 +63,12 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		double newParent = this.parent;
 		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
 			double id = entry.getKey();
-			NodeStateVector nodeStateVecotr = entry.getValue();
+			NodeStateVector nodeStateVector = entry.getValue();
 			// find a node with smallest level
-			if (nodeStateVecotr.level < minLevel) {
+			if (nodeStateVector.level < minLevel) {
 				// TODO is it necessary to choose the smallest ID? It's realized
 				// by using sorted map
-				minLevel = nodeStateVecotr.level;
+				minLevel = nodeStateVector.level;
 				newParent = id;
 			}
 		}
@@ -77,13 +86,34 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		}
 	}
 
+	/**
+	 * Refresh aggregate value by sum up aggregate value of all children and
+	 * self local value
+	 */
+	public long computeAggregate() {
+		long agg = 0;
+		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
+			double id = entry.getKey();
+			NodeStateVector nodeStateVector = entry.getValue();
+			if (nodeStateVector.status.equals("child")) {
+				agg += nodeStateVector.aggregate;
+			}
+		}
+		agg += this.value;
+		this.aggregate = agg;
+		return agg;
+	}
+
+	public UpdateVector composeMessage(Node node) {
+		return new UpdateVector(node, this.level, this.parent, this.aggregate);
+	}
+
 	public void removeEntry(double id) {
 		this.neighborList.remove(id);
 	}
 
 	public GAPNode(String prefix) {
 		super(prefix);
-		// TODO Auto-generated constructor stub
 	}
 
 }
