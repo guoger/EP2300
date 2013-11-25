@@ -45,6 +45,9 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		} else if (event instanceof UpdateVector) {
 			// TODO message from other nodes, update table accordingly and send
 			// out message
+			final UpdateVector msg = (UpdateVector) event;
+			updateEntry(msg);
+			boolean findShorterPath = findNewParent();
 		}
 
 	}

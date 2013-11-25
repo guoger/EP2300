@@ -12,44 +12,12 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 
 	// TODO need to be initialized by init control
 	// ********************************************
-	protected double parent;
-	protected double me;
-	protected double level;
-	protected long aggregate;
+	public double parent;
+	public double me;
+	public double level;
+	public long aggregate;
 
 	// ********************************************
-
-	public double getParent() {
-		return parent;
-	}
-
-	public void setParent(double id) {
-		this.parent = id;
-	}
-
-	public double getNodeId() {
-		return this.me;
-	}
-
-	public void setNodeId(double id) {
-		this.me = id;
-	}
-
-	public double getLevel() {
-		return this.level;
-	}
-
-	public void setLevel(double level) {
-		this.level = level;
-	}
-
-	public double getAggregate() {
-		return this.level;
-	}
-
-	public void setAggregate(long agg) {
-		this.aggregate = agg;
-	}
 
 	public SortedMap<Double, NodeStateVector> neighborList;
 
