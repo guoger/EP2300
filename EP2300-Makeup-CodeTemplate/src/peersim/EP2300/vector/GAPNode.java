@@ -17,6 +17,8 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	protected double level;
 	public long value; // local value (response time)
 	protected long aggregate; // sum of subtree (including self)
+	protected int resetLock; // REPORT a reset lock to prevent an entry being
+								// reseted after a fresher update
 
 	// ********************************************
 
@@ -36,6 +38,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		}
 		this.value = 0;
 		this.aggregate = 0;
+		this.resetLock = 0;
 	}
 
 	// TODO it will bring some benefits if we divide table into three separate
