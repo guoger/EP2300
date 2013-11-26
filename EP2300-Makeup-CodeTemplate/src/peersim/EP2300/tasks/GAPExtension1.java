@@ -90,6 +90,12 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 	}
 
 	private boolean testDiff() {
+		return true;
+	}
+
+//@formatter:off
+	/*
+	private boolean testDiff() {
 		// N -> 0 or 0 -> N
 		if ((lastReportedMax == 0 && totalReqTimeInSubtree != 0)
 				|| (lastReportedMax != 0 && totalReqTimeInSubtree == 0)) {
@@ -117,7 +123,8 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 			return false;
 		}
 	}
-
+*/
+//@formatter:on
 	// *********************************************************************
 	// *********************************************************************
 
