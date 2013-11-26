@@ -1,8 +1,11 @@
 package peersim.EP2300.tasks;
 
 import peersim.EP2300.message.ResponseTimeArriveMessage;
+import peersim.EP2300.message.TimeOut;
 import peersim.EP2300.message.UpdateVector;
+import peersim.EP2300.transport.ConfigurableDelayTransport;
 import peersim.EP2300.transport.InstantaneousTransport;
+import peersim.EP2300.util.NodeUtils;
 import peersim.EP2300.vector.GAPNode;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
@@ -19,16 +22,19 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	 */
 	protected static final String MESSAGE_BUDGET = "rate_control";
 
-	private final int msgBudget_value;
+	private final double msgBudget_value;
 
-	protected int msgBudget;
+	// private long timeWindow = 0;
+
+	protected double msgBudget;
 	public UpdateVector msgToSend;
 
 	public GAPServerWithRateLimit(String prefix) {
 		super(prefix);
-		msgBudget_value = (Configuration.getInt(prefix + "." + MESSAGE_BUDGET,
-				5));
+		msgBudget_value = (Configuration.getDouble(prefix + "."
+				+ MESSAGE_BUDGET, 5.0));
 		msgBudget = msgBudget_value;
+		timeWindow = Configuration.getLong("delta_t");
 	}
 
 	// If protocol and control are in the same package, this method could be
@@ -53,29 +59,105 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		 * indicating the change of aggregate 2) node: update state from
 		 * neightbor/child/parent
 		 */
-
+		// if (this.level == Double.POSITIVE_INFINITY)
+		// System.err.println("Still Orphan");
 		if (event instanceof ResponseTimeArriveMessage) {
-			final ResponseTimeArriveMessage loadChangeMsg = (ResponseTimeArriveMessage) event;
-			this.value = loadChangeMsg.getResponseTime();
+			final ResponseTimeArriveMessage newRequest = (ResponseTimeArriveMessage) event;
+			long resTime = newRequest.getResponseTime();
+			this.requestList.add(resTime);
+			scheduleATimeOut(pid, resTime);
 			// System.out.print("Load change: " + this.value);
-			long oldAgg = this.aggregate;
-			computeAggregate();
-			if (this.aggregate != oldAgg) {
-				sendMsg(node, pid);
+			// TODO put code below to a updateLocal()
+			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
+			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
+			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
+			computeLocalValue();
+			computeSubtreeValue();
+			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
+					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
+					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+				// vector != newvector
+				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof UpdateVector) {
 			final UpdateVector msg = (UpdateVector) event;
-			// System.out.println("Receive msg from neighbor");
+			// store old data
+			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
+			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
+			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
+			double oldLevel = this.level;
+
 			updateEntry(msg);
-			boolean findNewParent = findNewParent();
-			long oldAgg = this.aggregate;
-			computeAggregate();
-			if (findNewParent || this.aggregate != oldAgg) {
+			findNewParent();
+			computeSubtreeValue();
+
+			if (this.level != oldLevel) {
+				sendMsgToAllNeighbor(node, pid);
+				return;
+			}
+			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
+					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
+					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
-				sendMsg(node, pid);
+				sendMsgToParent(node, pid);
+			}
+		} else if (event instanceof TimeOut) {
+			// receive a time out message, reset aggregate value of
+			// corresponding entry
+			/*
+			 * REPORT a tradeoff between overhead and accuracy will occur here,
+			 * depending on the approach to realize node expiration
+			 */
+			final TimeOut msg = (TimeOut) event;
+			this.requestList.remove(msg.elementIndex);
+			// TODO put code below to a updateLocal()
+			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
+			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
+			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
+			computeLocalValue();
+			computeSubtreeValue();
+			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
+					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
+					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+				// vector != newvector
+				sendMsgToParent(node, pid);
 			}
 		}
 
+	}
+
+	private void scheduleATimeOut(int pid, long element) {
+		TimeOut timeOut = new TimeOut(element);
+		Node dest = NodeUtils.getInstance().getNodeByID((long) this.me);
+		ConfigurableDelayTransport transport = ConfigurableDelayTransport
+				.getInstance();
+		transport.setDelay(this.timeWindow);
+		transport.send(null, dest, timeOut, pid);
+	}
+
+	private void sendMsgToParent(Node node, int pid) {
+		// TODO send msg to parent. If this is root node, send to all neighbors,
+		// as a heart beat (actually, it's for initialization, DIRTY approach!
+		if (this.parent == Double.POSITIVE_INFINITY)
+			return;
+		if (this.me == 0) {
+			sendMsgToAllNeighbor(node, pid);
+		} else {
+			Linkable linkable = (Linkable) node.getProtocol(FastConfig
+					.getLinkable(pid));
+			UpdateVector newMessage = composeMessage(node);
+			for (int i = 0; i < linkable.degree(); ++i) {
+				if (msgBudget < 1.0)
+					return; // no message budget left, simply return
+				Node peer = linkable.getNeighbor(i);
+				if (peer.getID() == this.parent && peer.isUp()) {
+					InstantaneousTransport transport = new InstantaneousTransport();
+					transport.send(node, peer, newMessage, pid);
+					msgBudget--;
+					return;
+				}
+			}
+		}
 	}
 
 	/**
@@ -84,7 +166,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	 * @param node
 	 * @param pid
 	 */
-	private void sendMsg(Node node, int pid) {
+	private void sendMsgToAllNeighbor(Node node, int pid) {
 		// System.out.println("Have msg budget" + this.msgBudget);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));

@@ -26,8 +26,7 @@ public class GAPProtocolBase {
 	}
 
 	/**
-	 * TODO Estimated value of g(t). Write your estimation here for the root
-	 * node.
+	 * TODO Should be override by child
 	 */
 	protected double estimatedAverage;
 

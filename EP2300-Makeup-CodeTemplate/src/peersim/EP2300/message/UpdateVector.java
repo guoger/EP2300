@@ -9,12 +9,18 @@ public class UpdateVector {
 	final public Node sender;
 	final public double level;
 	final public double parent;
-	final public long aggregate;
+	final public long totalReqTimeInSubtree;
+	final public long totalReqNumInSubtree;
+	final public long maxReqTimeInSubtree;
 
-	public UpdateVector(Node sender, double level, double parent, long aggregate) {
+	public UpdateVector(Node sender, double level, double parent,
+			long totalReqTimeInSubtree, long totalReqNumInSubtree,
+			long maxReqTimeInSubtree) {
 		this.sender = sender;
 		this.level = level;
 		this.parent = parent;
-		this.aggregate = aggregate;
+		this.totalReqTimeInSubtree = totalReqTimeInSubtree;
+		this.totalReqNumInSubtree = totalReqNumInSubtree;
+		this.maxReqTimeInSubtree = maxReqTimeInSubtree;
 	}
 }
