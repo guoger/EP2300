@@ -9,9 +9,9 @@ package peersim.EP2300.message;
  */
 public class TimeOut {
 
-	final public long element;
+	final public long elementIndex;
 
 	public TimeOut(long element) {
-		this.element = element;
+		this.elementIndex = element;
 	}
 }

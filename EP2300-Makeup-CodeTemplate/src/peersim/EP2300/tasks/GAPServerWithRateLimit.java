@@ -109,7 +109,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			 * depending on the approach to realize node expiration
 			 */
 			final TimeOut msg = (TimeOut) event;
-			this.requestList.remove(msg.element);
+			this.requestList.remove(msg.elementIndex);
 			// TODO put code below to a updateLocal()
 			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
 			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
@@ -131,7 +131,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		Node dest = NodeUtils.getInstance().getNodeByID((long) this.me);
 		ConfigurableDelayTransport transport = ConfigurableDelayTransport
 				.getInstance();
-		transport.setDelay(element);
+		transport.setDelay(this.timeWindow);
 		transport.send(null, dest, timeOut, pid);
 	}
 

@@ -8,6 +8,7 @@ import java.util.TreeMap;
 import peersim.EP2300.base.GAPProtocolBase;
 import peersim.EP2300.message.UpdateVector;
 import peersim.EP2300.util.NodeStateVector;
+import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
@@ -21,6 +22,8 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public long totalReqNumLocal;
 	public long maxReqTimeInSubtree;
 	public long maxReqTimeLocal;
+
+	public long timeWindow = -1;
 
 	// ********************************************
 
@@ -193,5 +196,6 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		super(prefix);
 		this.neighborList = new TreeMap<Double, NodeStateVector>();
 		this.requestList = new ArrayList<Long>();
+		timeWindow = Configuration.getLong("delta_t");
 	}
 }
