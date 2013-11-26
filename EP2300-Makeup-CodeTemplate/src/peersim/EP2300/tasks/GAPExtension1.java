@@ -90,16 +90,24 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 	}
 
 	private boolean testDiff() {
-		if (lastReportedMax == 0 || lastReportedTotalNum == 0) {
+		// N -> 0 or 0 -> N
+		if ((lastReportedMax == 0 && totalReqTimeInSubtree != 0)
+				|| (lastReportedMax != 0 && totalReqTimeInSubtree == 0)) {
 			lastReportedMax = maxReqTimeInSubtree;
 			lastReportedTotalResponseTime = totalReqTimeInSubtree;
 			lastReportedTotalNum = totalReqNumInSubtree;
 			return true;
 		}
+		if (lastReportedMax == 0 && totalReqTimeInSubtree == 0) {
+			return false;
+		}
 		boolean maxResTimeExceedErrorObj = ((Math.abs(maxReqTimeInSubtree
 				- lastReportedMax) / lastReportedMax) > errorObj);
-		boolean avgResTimeExceedErrorObj = (Math.abs(estimatedAverage
-				- lastReportedTotalResponseTime / lastReportedTotalNum) > errorObj);
+		double lastReportedAvg = lastReportedTotalResponseTime
+				/ lastReportedTotalNum;
+		boolean avgResTimeExceedErrorObj = (Math.abs(lastReportedAvg
+				- estimatedAverage)
+				/ lastReportedAvg > errorObj);
 		if (maxResTimeExceedErrorObj || avgResTimeExceedErrorObj) {
 			lastReportedMax = maxReqTimeInSubtree;
 			lastReportedTotalResponseTime = totalReqTimeInSubtree;
@@ -110,24 +118,23 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		}
 	}
 
+	// *********************************************************************
+	// *********************************************************************
+
 	@Override
 	public void processEvent(Node node, int pid, Object event) {
 		// Implement your event-driven code for task 2 here
 		if (event instanceof ResponseTimeArriveMessage) {
 			final ResponseTimeArriveMessage newRequest = (ResponseTimeArriveMessage) event;
 			long resTime = newRequest.getResponseTime();
-			this.requestList.add(resTime);
+			requestList.add(resTime);
+			System.out.println(requestList);
 			scheduleATimeOut(pid, resTime);
 			// System.out.print("Load change: " + this.value);
 			// TODO put code below to a updateLocal()
 			computeLocalValue();
 			computeSubtreeValue();
-			if (this.lastReportedTotalNum == 0) {
-				sendMsgToParent(node, pid);
-				return;
-			}
 			if (testDiff()) {
-				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof UpdateVector) {
@@ -142,7 +149,6 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 				return;
 			}
 			if (testDiff()) {
-				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof TimeOut) {
@@ -157,7 +163,6 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 			computeLocalValue();
 			computeSubtreeValue();
 			if (testDiff()) {
-				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
 		}
