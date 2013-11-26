@@ -22,17 +22,17 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	 */
 	protected static final String MESSAGE_BUDGET = "rate_control";
 
-	private final int msgBudget_value;
+	private final double msgBudget_value;
 
 	private long timeWindow = 0;
 
-	protected int msgBudget;
+	protected double msgBudget;
 	public UpdateVector msgToSend;
 
 	public GAPServerWithRateLimit(String prefix) {
 		super(prefix);
-		msgBudget_value = (Configuration.getInt(prefix + "." + MESSAGE_BUDGET,
-				5));
+		msgBudget_value = (Configuration.getDouble(prefix + "."
+				+ MESSAGE_BUDGET, 5.0));
 		msgBudget = msgBudget_value;
 		timeWindow = Configuration.getLong("delta_t");
 	}
@@ -147,7 +147,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 					.getLinkable(pid));
 			UpdateVector newMessage = composeMessage(node);
 			for (int i = 0; i < linkable.degree(); ++i) {
-				if (msgBudget <= 0)
+				if (msgBudget < 1.0)
 					return; // no message budget left, simply return
 				Node peer = linkable.getNeighbor(i);
 				if (peer.getID() == this.parent && peer.isUp()) {
