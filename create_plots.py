@@ -9,7 +9,7 @@ import argparse
 from scipy.stats import gaussian_kde
 
 WARM_UP_PERIOD = 60
-PLOT_PATH = "plots"
+PLOT_PATH = "report/plots"
 DEFAULT_PATH = "EP2300-Makeup-CodeTemplate/sim-results/out/result.log"
 NUM_PDF_VALUES = 20
 NAMES_LIST = ['index', 'actMax', 'estMax', 'estMaxErr', 'actAvg', 'estAvg',
