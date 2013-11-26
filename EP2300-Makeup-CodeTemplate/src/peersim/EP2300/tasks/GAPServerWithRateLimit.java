@@ -98,10 +98,11 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			 */
 			this.resetLock--;
 			if (this.resetLock == 0) {
-				this.value = 0;
+				this.value = -1;
 				long oldAgg = this.aggregate;
+				long oldActive = this.activeNodes;
 				computeAggregate();
-				if (this.aggregate != oldAgg) {
+				if (this.aggregate != oldAgg || this.activeNodes != oldActive) {
 					sendMsgToParent(node, pid);
 				}
 			}

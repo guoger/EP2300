@@ -10,11 +10,14 @@ public class UpdateVector {
 	final public double level;
 	final public double parent;
 	final public long aggregate;
+	final public long activeNodes;
 
-	public UpdateVector(Node sender, double level, double parent, long aggregate) {
+	public UpdateVector(Node sender, double level, double parent,
+			long aggregate, long activeNodes) {
 		this.sender = sender;
 		this.level = level;
 		this.parent = parent;
 		this.aggregate = aggregate;
+		this.activeNodes = activeNodes;
 	}
 }

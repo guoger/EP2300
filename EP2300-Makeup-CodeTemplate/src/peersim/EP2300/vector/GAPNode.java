@@ -19,6 +19,8 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	protected long aggregate; // sum of subtree (including self)
 	protected int resetLock; // REPORT a reset lock to prevent an entry being
 								// reseted after a fresher update
+	protected long activeNodes; // number of active nodes in whole subtree,
+								// including self
 
 	// ********************************************
 
@@ -36,9 +38,12 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			this.parent = Double.POSITIVE_INFINITY;
 			this.level = Double.POSITIVE_INFINITY;
 		}
-		this.value = 0;
+		this.value = -1;
 		this.aggregate = 0;
 		this.resetLock = 0;
+		this.activeNodes = 0;
+		this.estimatedAverage = 0;
+		this.estimatedMax = 0;
 	}
 
 	// TODO it will bring some benefits if we divide table into three separate
@@ -59,19 +64,20 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		double srcId = msg.sender.getID();
 		long aggregate = msg.aggregate;
 		double senderLevel = msg.level;
+		long activeNodes = msg.activeNodes;
 		NodeStateVector nodeStateVector = null;
 		if (srcParent == this.me) {
 			// message from child (both new and old)
 			nodeStateVector = new NodeStateVector("child", senderLevel,
-					aggregate);
+					aggregate, activeNodes);
 		} else if (srcId == this.parent) {
 			// message from parent
 			nodeStateVector = new NodeStateVector("parent", senderLevel,
-					aggregate);
+					aggregate, activeNodes);
 		} else {
 			// message from peer
 			nodeStateVector = new NodeStateVector("peer", senderLevel,
-					aggregate);
+					aggregate, activeNodes);
 		}
 		this.neighborList.put(srcId, nodeStateVector);
 	}
@@ -136,6 +142,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	 */
 	public long computeAggregate() {
 		long agg = 0;
+		long active = 0;
 		if (neighborList.isEmpty()) {
 			this.aggregate = this.value;
 			return this.aggregate;
@@ -145,19 +152,26 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			NodeStateVector nodeStateVector = entry.getValue();
 			if (nodeStateVector.status.equals("child")) {
 				agg += nodeStateVector.aggregate;
+				active += nodeStateVector.activeNodeNumber;
 			}
 		}
-		agg += this.value;
+		if (this.value != -1) {
+			// if this node is active
+			agg += this.value;
+			active++;
+		}
 		// System.out.println("New agg value" + this.value);
 		this.aggregate = agg;
-		if (this.me == 0) {
-			this.estimatedMax = this.aggregate;
+		this.activeNodes = active;
+		if (this.me == 0 && this.activeNodes != 0) {
+			this.estimatedAverage = this.aggregate / this.activeNodes;
 		}
 		return agg;
 	}
 
 	public UpdateVector composeMessage(Node node) {
-		return new UpdateVector(node, this.level, this.parent, this.aggregate);
+		return new UpdateVector(node, this.level, this.parent, this.aggregate,
+				this.activeNodes);
 	}
 
 	public void removeEntry(double id) {
