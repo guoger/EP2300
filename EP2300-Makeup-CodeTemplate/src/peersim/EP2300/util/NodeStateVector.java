@@ -3,14 +3,16 @@ package peersim.EP2300.util;
 public class NodeStateVector {
 	public String status;
 	public double level;
-	public long aggregate;
-	public long activeNodeNumber;
+	public long totalReqTime;
+	public long totalReqNum;
+	public long maxReqTime;
 
-	public NodeStateVector(String status, double level, long aggregate,
-			long activeNodesNumber) {
+	public NodeStateVector(String status, double level, long totalReqTime,
+			long totalReqNum, long maxReqTime) {
 		this.status = status;
 		this.level = level;
-		this.aggregate = aggregate;
-		this.activeNodeNumber = activeNodesNumber;
+		this.totalReqTime = totalReqTime;
+		this.totalReqNum = totalReqNum;
+		this.maxReqTime = maxReqTime;
 	}
 }

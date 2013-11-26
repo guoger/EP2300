@@ -94,7 +94,8 @@ public class PerformanceObserver implements Control {
 		}
 
 		actualMax = maxResponseTime;
-		System.out.println(numResponseTimes);
+		System.err.println("Actual sum: " + sumResponseTimes);
+		System.err.println("Actual number of requests: " + numResponseTimes);
 		actualAverage = sumResponseTimes / numResponseTimes;
 
 		// remove unused traces that are before start time

@@ -59,35 +59,47 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		 * indicating the change of aggregate 2) node: update state from
 		 * neightbor/child/parent
 		 */
-
+		// if (this.level == Double.POSITIVE_INFINITY)
+		// System.err.println("Still Orphan");
 		if (event instanceof ResponseTimeArriveMessage) {
-			final ResponseTimeArriveMessage loadChangeMsg = (ResponseTimeArriveMessage) event;
-			this.value = loadChangeMsg.getResponseTime();
-			scheduleATimeOut(pid);
-			this.resetLock++;
+			final ResponseTimeArriveMessage newRequest = (ResponseTimeArriveMessage) event;
+			long resTime = newRequest.getResponseTime();
+			this.requestList.add(resTime);
+			scheduleATimeOut(pid, resTime);
 			// System.out.print("Load change: " + this.value);
-			long oldAgg = this.aggregate;
-			computeAggregate();
-			if (this.aggregate != oldAgg) {
+			// TODO put code below to a updateLocal()
+			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
+			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
+			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
+			computeLocalValue();
+			computeSubtreeValue();
+			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
+					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
+					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof UpdateVector) {
 			final UpdateVector msg = (UpdateVector) event;
-			// System.out.println("Receive msg from neighbor");
-			updateEntry(msg);
+			// store old data
+			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
+			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
+			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			double oldLevel = this.level;
-			boolean findNewParent = findNewParent();
-			long oldAgg = this.aggregate;
-			computeAggregate();
-			if (this.aggregate != oldAgg) {
+
+			updateEntry(msg);
+			findNewParent();
+			computeSubtreeValue();
+
+			if (this.level != oldLevel) {
+				sendMsgToAllNeighbor(node, pid);
+				return;
+			}
+			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
+					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
+					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
-				if (this.level != oldLevel) {
-					// if level changed, send to all neighbors
-					sendMsgToAllNeighbor(node, pid);
-				} else {
-					// otherwise, send to parent only
-					sendMsgToParent(node, pid);
-				}
+				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof TimeOut) {
 			// receive a time out message, reset aggregate value of
@@ -96,35 +108,39 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			 * REPORT a tradeoff between overhead and accuracy will occur here,
 			 * depending on the approach to realize node expiration
 			 */
-			this.resetLock--;
-			if (this.resetLock == 0) {
-				this.value = -1;
-				long oldAgg = this.aggregate;
-				long oldActive = this.activeNodes;
-				computeAggregate();
-				if (this.aggregate != oldAgg || this.activeNodes != oldActive) {
-					sendMsgToParent(node, pid);
-				}
+			final TimeOut msg = (TimeOut) event;
+			this.requestList.remove(msg.element);
+			// TODO put code below to a updateLocal()
+			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
+			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
+			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
+			computeLocalValue();
+			computeSubtreeValue();
+			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
+					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
+					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+				// vector != newvector
+				sendMsgToParent(node, pid);
 			}
-
 		}
 
 	}
 
-	private void scheduleATimeOut(int pid) {
-		TimeOut timeOut = new TimeOut();
+	private void scheduleATimeOut(int pid, long element) {
+		TimeOut timeOut = new TimeOut(element);
 		Node dest = NodeUtils.getInstance().getNodeByID((long) this.me);
 		ConfigurableDelayTransport transport = ConfigurableDelayTransport
 				.getInstance();
-		transport.setDelay(timeWindow);
+		transport.setDelay(element);
 		transport.send(null, dest, timeOut, pid);
-
 	}
 
 	private void sendMsgToParent(Node node, int pid) {
 		// TODO send msg to parent. If this is root node, send to all neighbors,
 		// as a heart beat (actually, it's for initialization, DIRTY approach!
-		if (this.me == 0 || this.parent == Double.POSITIVE_INFINITY) {
+		if (this.parent == Double.POSITIVE_INFINITY)
+			return;
+		if (this.me == 0) {
 			sendMsgToAllNeighbor(node, pid);
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig

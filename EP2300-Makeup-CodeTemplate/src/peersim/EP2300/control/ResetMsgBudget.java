@@ -1,9 +1,13 @@
 package peersim.EP2300.control;
 
+import java.util.ArrayList;
+
 import peersim.EP2300.tasks.GAPServerWithRateLimit;
+import peersim.EP2300.vector.GAPNode;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
+import peersim.core.Node;
 
 public class ResetMsgBudget implements Control {
 
@@ -17,10 +21,31 @@ public class ResetMsgBudget implements Control {
 
 	@Override
 	public boolean execute() {
+		boolean orphan = false;
+		GAPNode rootNode;
+		ArrayList orphanList = new ArrayList();
 		for (int i = 0; i < Network.size(); ++i) {
-			((GAPServerWithRateLimit) Network.get(i).getProtocol(protocolID))
+			Node node = Network.get(i);
+			if (node.getID() == 0) {
+				rootNode = ((GAPServerWithRateLimit) ((Node) node)
+						.getProtocol(protocolID));
+				System.err.println("Active requests: "
+						+ rootNode.totalReqNumInSubtree);
+				System.err.println("Active requests sum: "
+						+ rootNode.totalReqTimeInSubtree);
+			}
+			((GAPServerWithRateLimit) node.getProtocol(protocolID))
 					.resetMsgBudget();
+			if (Double.isInfinite((((GAPServerWithRateLimit) node
+					.getProtocol(protocolID)).level))) {
+				orphan = true;
+				orphanList.add(Network.get(i).getID());
+			}
 		}
+		if (orphan) {
+			System.err.println(orphanList);
+		}
+
 		return false;
 	}
 }
