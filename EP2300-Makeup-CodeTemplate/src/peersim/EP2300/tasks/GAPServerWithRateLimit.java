@@ -24,7 +24,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 
 	private final double msgBudget_value;
 
-	private long timeWindow = 0;
+	// private long timeWindow = 0;
 
 	protected double msgBudget;
 	public UpdateVector msgToSend;
