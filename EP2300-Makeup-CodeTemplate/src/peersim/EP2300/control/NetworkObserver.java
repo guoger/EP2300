@@ -21,7 +21,11 @@ public class NetworkObserver implements Control {
 	@Override
 	public boolean execute() {
 		boolean orphan = false;
+		int[] levelList = new int[10];
+		double level;
+		int nodeC = 0;
 		GAPNode rootNode;
+		GAPServerWithRateLimit p;
 		ArrayList<Long> orphanList = new ArrayList<Long>();
 		for (int i = 0; i < Network.size(); ++i) {
 			Node node = Network.get(i);
@@ -36,20 +40,31 @@ public class NetworkObserver implements Control {
 				System.err
 						.println("Nodes number: " + rootNode.nodeNumInSubtree);
 				System.err.println("Actual network size: " + Network.size());
-				rootNode.printNeighbor();
+				// rootNode.printNeighbor();
 			}
-			// Change here to adapt to different tasks
+			p = ((GAPServerWithRateLimit) node.getProtocol(protocolID));
+			level = p.level;
 
+			if (level == 1) {
+				nodeC += ((GAPServerWithRateLimit) node.getProtocol(protocolID)).nodeNumInSubtree;
+			}
+
+			// Change here to adapt to different tasks
 			if (Double.isInfinite((((GAPServerWithRateLimit) node
 					.getProtocol(protocolID)).level))) {
 				orphan = true;
 				orphanList.add(Network.get(i).getID());
+			} else {
+				levelList[(int) level]++;
 			}
 		}
 		if (orphan) {
 			System.err.println(orphanList);
 		}
+		System.err.println("level 1 node count: " + nodeC);
+		for (int i = 0; i < 10; i++)
+			System.err.print(levelList[i] + "\t");
+		System.err.println("\n");
 		return false;
 	}
-
 }

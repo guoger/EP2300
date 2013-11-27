@@ -162,10 +162,11 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		} else if (event instanceof UpdateVector) {
 			final UpdateVector msg = (UpdateVector) event;
 			double oldLevel = this.level;
+			double oldParent = this.parent;
 			updateEntry(msg);
 			findNewParent();
 			computeSubtreeValue();
-			if (this.level != oldLevel) {
+			if (this.level != oldLevel || this.parent != oldParent) {
 				sendMsgToAllNeighbor(node, pid);
 				return;
 			}

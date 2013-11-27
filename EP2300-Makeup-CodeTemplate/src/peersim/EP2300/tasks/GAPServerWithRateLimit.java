@@ -1,13 +1,10 @@
 package peersim.EP2300.tasks;
 
-import java.util.Map.Entry;
-
 import peersim.EP2300.message.ResponseTimeArriveMessage;
 import peersim.EP2300.message.TimeOut;
 import peersim.EP2300.message.UpdateVector;
 import peersim.EP2300.transport.ConfigurableDelayTransport;
 import peersim.EP2300.transport.InstantaneousTransport;
-import peersim.EP2300.util.NodeStateVector;
 import peersim.EP2300.util.NodeUtils;
 import peersim.EP2300.vector.GAPNode;
 import peersim.cdsim.CDProtocol;
@@ -89,12 +86,12 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			double oldLevel = this.level;
-
+			double oldParent = this.parent;
 			updateEntry(msg);
 			findNewParent();
 			computeSubtreeValue();
 
-			if (this.level != oldLevel) {
+			if (this.level != oldLevel || this.parent != oldParent) {
 				sendMsgToAllNeighbor(node, pid);
 				return;
 			}
@@ -103,18 +100,6 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
 				sendMsgToParent(node, pid);
-			}
-			boolean findParent = false;
-			for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
-				double id = entry.getKey();
-				NodeStateVector nodeStateVector = entry.getValue();
-				if (nodeStateVector.status.equals("parent")) {
-					if (findParent == true) {
-						System.err.println("multiple parents!!!!!!!");
-					} else {
-						findParent = true;
-					}
-				}
 			}
 
 		} else if (event instanceof TimeOut) {
@@ -156,8 +141,9 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		// as a heart beat (actually, it's for initialization, DIRTY approach!
 		if (this.parent == Double.POSITIVE_INFINITY)
 			return;
-		if (this.myId == 0) {
+		if (this.virgin == true && this.myId == 0) {
 			sendMsgToAllNeighbor(node, pid);
+			this.virgin = false;
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig
 					.getLinkable(pid));
