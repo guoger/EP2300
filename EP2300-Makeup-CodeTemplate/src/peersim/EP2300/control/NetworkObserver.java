@@ -2,7 +2,7 @@ package peersim.EP2300.control;
 
 import java.util.ArrayList;
 
-import peersim.EP2300.tasks.GAPExtension1;
+import peersim.EP2300.tasks.GAPServerWithRateLimit;
 import peersim.EP2300.vector.GAPNode;
 import peersim.config.Configuration;
 import peersim.core.Control;
@@ -26,14 +26,21 @@ public class NetworkObserver implements Control {
 		for (int i = 0; i < Network.size(); ++i) {
 			Node node = Network.get(i);
 			if (node.getID() == 0) {
-				rootNode = ((GAPExtension1) ((Node) node)
+				// Change here to adapt to different tasks
+				rootNode = ((GAPServerWithRateLimit) ((Node) node)
 						.getProtocol(protocolID));
 				System.err.println("Active requests: "
 						+ rootNode.totalReqNumInSubtree);
 				System.err.println("Active requests sum: "
 						+ rootNode.totalReqTimeInSubtree);
+				System.err
+						.println("Nodes number: " + rootNode.nodeNumInSubtree);
+				System.err.println("Actual network size: " + Network.size());
+				rootNode.printNeighbor();
 			}
-			if (Double.isInfinite((((GAPExtension1) node
+			// Change here to adapt to different tasks
+
+			if (Double.isInfinite((((GAPServerWithRateLimit) node
 					.getProtocol(protocolID)).level))) {
 				orphan = true;
 				orphanList.add(Network.get(i).getID());

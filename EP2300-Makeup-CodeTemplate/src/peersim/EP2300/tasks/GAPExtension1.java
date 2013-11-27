@@ -43,7 +43,7 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 
 	private void scheduleATimeOut(int pid, long element) {
 		TimeOut timeOut = new TimeOut(element);
-		Node dest = NodeUtils.getInstance().getNodeByID((long) this.me);
+		Node dest = NodeUtils.getInstance().getNodeByID((long) this.myId);
 		ConfigurableDelayTransport transport = ConfigurableDelayTransport
 				.getInstance();
 		transport.setDelay(this.timeWindow);
@@ -55,7 +55,7 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		// as a heart beat (actually, it's for initialization, DIRTY approach!
 		if (this.parent == Double.POSITIVE_INFINITY)
 			return;
-		if (this.virgin == true && this.me == 0) {
+		if (this.virgin == true && this.myId == 0) {
 			sendMsgToAllNeighbor(node, pid);
 			this.virgin = false;
 		} else {
