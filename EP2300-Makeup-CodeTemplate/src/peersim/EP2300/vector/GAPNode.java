@@ -22,6 +22,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public long totalReqNumLocal;
 	public long maxReqTimeInSubtree;
 	public long maxReqTimeLocal;
+	protected boolean virgin;
 
 	public long timeWindow = -1;
 
@@ -35,7 +36,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public void setInit(double nodeId) {
 		this.me = nodeId;
 		if (nodeId == 0) {
-			// I'm root
+			System.err.println("I'm root node!");
 			this.level = 0;
 			this.parent = 0;
 		} else {
@@ -49,6 +50,14 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		this.maxReqTimeInSubtree = 0;
 		this.estimatedAverage = 0;
 		this.estimatedMax = 0;
+		this.virgin = true;
+	}
+
+	public GAPNode(String prefix) {
+		super(prefix);
+		this.neighborList = new TreeMap<Double, NodeStateVector>();
+		this.requestList = new ArrayList<Long>();
+		timeWindow = Configuration.getLong("delta_t");
 	}
 
 	/*
@@ -155,9 +164,9 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 				: maxReqTime;
 
 		this.estimatedMax = this.maxReqTimeInSubtree;
-		if (this.totalReqNumInSubtree != 0) {
-			this.estimatedAverage = this.totalReqTimeInSubtree
-					/ this.totalReqNumInSubtree;
+		if (totalReqNumInSubtree != 0) {
+			estimatedAverage = (double) totalReqTimeInSubtree
+					/ (double) totalReqNumInSubtree;
 		} else {
 			this.estimatedAverage = 0;
 		}
@@ -190,12 +199,5 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 
 	public void removeEntry(double id) {
 		this.neighborList.remove(id);
-	}
-
-	public GAPNode(String prefix) {
-		super(prefix);
-		this.neighborList = new TreeMap<Double, NodeStateVector>();
-		this.requestList = new ArrayList<Long>();
-		timeWindow = Configuration.getLong("delta_t");
 	}
 }

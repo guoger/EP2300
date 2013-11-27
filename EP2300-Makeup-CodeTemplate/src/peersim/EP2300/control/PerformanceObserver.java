@@ -111,7 +111,6 @@ public class PerformanceObserver implements Control {
 
 	private void measureRequests() {
 		getActualMeasurementsFromTrace();
-
 		// Find Node ID 0
 		Node rootNode = null;
 		for (int i = 0; i < Network.size(); i++) {

@@ -17,7 +17,7 @@ import peersim.edsim.EDProtocol;
 public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 
 	protected static final String ERROR_OBJECTIVE = "error_objective";
-	private final double errorObj;
+	private final double errorBudget;
 	private double lastReportedMax;
 	private double lastReportedTotalResponseTime;
 	private double lastReportedTotalNum;
@@ -26,7 +26,7 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		super(prefix);
 		double errorObj = (Configuration.getDouble(prefix + "."
 				+ ERROR_OBJECTIVE, 5.0));
-		this.errorObj = errorObj / 100.0;
+		this.errorBudget = errorObj;
 		timeWindow = Configuration.getLong("delta_t");
 		this.lastReportedMax = 0;
 		this.lastReportedTotalNum = 0;
@@ -55,8 +55,9 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		// as a heart beat (actually, it's for initialization, DIRTY approach!
 		if (this.parent == Double.POSITIVE_INFINITY)
 			return;
-		if (this.me == 0) {
+		if (this.virgin == true && this.me == 0) {
 			sendMsgToAllNeighbor(node, pid);
+			this.virgin = false;
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig
 					.getLinkable(pid));
@@ -90,7 +91,22 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 	}
 
 	private boolean testDiff() {
-		return true;
+		double lastReportedEst;
+		if (this.lastReportedTotalNum == 0) {
+			lastReportedEst = 0;
+		} else {
+			lastReportedEst = this.lastReportedTotalResponseTime
+					/ this.lastReportedTotalNum;
+		}
+		if ((Math.abs(lastReportedMax - this.maxReqTimeInSubtree) > errorBudget)
+				|| (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudget)) {
+			lastReportedTotalNum = totalReqNumInSubtree;
+			lastReportedMax = maxReqTimeInSubtree;
+			lastReportedTotalResponseTime = totalReqTimeInSubtree;
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 //@formatter:off
@@ -135,10 +151,9 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 			final ResponseTimeArriveMessage newRequest = (ResponseTimeArriveMessage) event;
 			long resTime = newRequest.getResponseTime();
 			requestList.add(resTime);
-			System.out.println(requestList);
+			// System.out.println(requestList);
 			scheduleATimeOut(pid, resTime);
 			// System.out.print("Load change: " + this.value);
-			// TODO put code below to a updateLocal()
 			computeLocalValue();
 			computeSubtreeValue();
 			if (testDiff()) {
@@ -150,7 +165,6 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 			updateEntry(msg);
 			findNewParent();
 			computeSubtreeValue();
-
 			if (this.level != oldLevel) {
 				sendMsgToAllNeighbor(node, pid);
 				return;
