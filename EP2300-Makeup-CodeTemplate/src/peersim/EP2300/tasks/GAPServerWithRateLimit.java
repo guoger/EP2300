@@ -33,7 +33,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		super(prefix);
 		msgBudget_value = (Configuration.getDouble(prefix + "."
 				+ MESSAGE_BUDGET, 5.0));
-		msgBudget = msgBudget_value;
+		msgBudget = 99999; // for warm-up phase, we don't constrain message rate
 		timeWindow = Configuration.getLong("delta_t");
 	}
 
