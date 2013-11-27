@@ -158,17 +158,17 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			}
 		}
 		// System.out.println("New agg value" + this.value);
-		this.totalReqNumInSubtree = this.totalReqNumLocal + activeReqNum;
-		this.totalReqTimeInSubtree = this.totalReqTimeLocal + totalReqTime;
-		this.maxReqTimeInSubtree = (this.maxReqTimeLocal > maxReqTime) ? this.maxReqTimeLocal
+		totalReqNumInSubtree = totalReqNumLocal + activeReqNum;
+		totalReqTimeInSubtree = totalReqTimeLocal + totalReqTime;
+		maxReqTimeInSubtree = (maxReqTimeLocal > maxReqTime) ? this.maxReqTimeLocal
 				: maxReqTime;
 
-		this.estimatedMax = this.maxReqTimeInSubtree;
+		estimatedMax = maxReqTimeInSubtree;
 		if (totalReqNumInSubtree != 0) {
 			estimatedAverage = (double) totalReqTimeInSubtree
 					/ (double) totalReqNumInSubtree;
 		} else {
-			this.estimatedAverage = 0;
+			estimatedAverage = 0;
 		}
 	}
 
