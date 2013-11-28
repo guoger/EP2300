@@ -102,13 +102,94 @@ procedure GAP( )
     end while
     end procedure
 \end{lstlisting}
+\begin{lstlisting}[caption={inspired by \cite{stadler2012protocols}}, numbers=left, frame=single]
+messages:
+(ResponseTimeArriveMessage, responseTime)
+(UpdateVector, neighbor)
+(TimeOut, responseTime)
+
+help functions:
+A.aggregate_local
+A.aggregate_sub_tree
+A.value
+A.global
+send_to_self
+send_to_neighbors
+send_to_parent
+find_parent
+
+procedure GAP( )
+    DELAY = # fixed time window
+    Neighbors := empty;
+    ResponseTimes := empty;
+
+    if v = root then
+        level = 0
+        parent = 0
+    else
+        level = INF
+        parent = INF
+    end if
+
+    A.initiate()
+    while true do
+        read message;
+        switch (message)
+            case (ResponseTimeArriveMessage, responseTime)
+                ResponseTimes.add(responseTime)
+                # to keep only a set of responseTimes in cache
+                send_to_self(DELAY, TimeOut(responseTime))
+                A.aggregate_local(ResponseTimes)
+                A.aggregate_sub_tree(Neighbors)
+            case (UpdateVector, neighbor):
+                Neighbors.add(neighbor) 
+                (newParent, newLevel) = find_new_parent(Neighbors)
+                A.aggregate_sub_tree(Neighbors)
+                if level != newLevel then
+                    level = newLevel
+                    parent = newParent
+                    send_to_neighbors(Neighbors, level, parent, A.value())
+                    continue
+                end if
+            # to keep only a set of responseTimes in cache
+            case (TimeOut, responseTime):
+                responses.remove(responseTime)
+                A.aggregate_local_value(ResponseTimes)
+                A.aggregate_sub_tree(Neighbors)
+        end switch
+        if (v =root) then A.global()
+
+        # TODO: reformulate below!!!
+        newvector := updateVector();
+        if newvector != vector then
+            send (update, newvector) to all neighbors;
+            vector := newvector;
+        end if
+        send_to_parent(Neighbors, A.value)
+    end while
+    end procedure
+\end{lstlisting}
 
 \begin{figure}[h!]
     \begin{center}
-        \includegraphics[scale=0.7]{plot}
+        \includegraphics[scale=0.7]{plots/time_series}
     \end{center}
-    \caption{Required plots}
-    \label{fig:plot}
+    \caption{Time series plot}
+    \label{fig:ts}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{plots/trade_off}
+    \end{center}
+    \caption{Trade off plot}
+    \label{fig:to}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{plots/pdf_of_error}
+    \end{center}
+    \caption{PDF plot}
+    \label{fig:pdf}
 \end{figure}
 
 

@@ -7,15 +7,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 from scipy.stats import gaussian_kde
+import os
 
+MARKER_SIZE=5
+ALPHA_VAL=0.7
 WARM_UP_PERIOD = 60
 PLOT_PATH = "report/plots"
 DEFAULT_PATH = "EP2300-Makeup-CodeTemplate/sim-results/out/result.log"
 NUM_PDF_VALUES = 20
 NAMES_LIST = ['index', 'actMax', 'estMax', 'estMaxErr', 'actAvg', 'estAvg',
     'estAvgErr', 'maxMsgRate', 'overhead']
-colors = {'actMax':'rx', 'estMax':'yo', 'estMaxErr':'gs', 'actAvg':'y*',
-    'estAvg':'mp', 'estAvgErr':'cd', 'maxMsgRate':'b+' }
+params = {
+    'actMax':(['rx'], {'label':'act max', 'alpha':0.5, 'markersize':3}),
+    'estMax':(['yo'], {'label':'est max', 'alpha':0.5, 'markersize':3}),
+    'estMaxErr':(['gs'], {'label':'est max err', 'markersize':5}),
+    'actAvg':(['y-'], {'label':'act avg', 'alpha':0.5, 'linewidth':5, 'markersize':5}),
+    'estAvg':(['m-'], {'label':'est avg', 'linewidth':1, 'markersize':5}),
+    'estAvgErr':(['cd'], {'label':'est avg err', 'markersize':5})
+    #'maxMsgRate':(['b+'], {})
+}
 names = {}
 i = 0
 
@@ -27,7 +37,7 @@ def time_series_plot(ax, data, variables):
     ax.grid(True)
     time = data['index']
     for var in variables:
-        plt.plot(time, data[var], colors[var], label=var)
+        plt.plot(time, data[var], *params[var][0], **params[var][1])
     plt.xlabel("time")
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles, labels, numpoints=1)
@@ -36,7 +46,7 @@ def trade_off_plot(ax, data, variables):
     ax.grid(True)
     overhead = data['overhead']
     for var in variables:
-        plt.plot(data[var], overhead, colors[var], label=var)
+        plt.plot(data[var], overhead, *params[var][0], **params[var][1])
     plt.ylabel("overhead")
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles, labels, numpoints=1)
@@ -47,7 +57,7 @@ def density_plot(ax, data, variables):
         data_wo_warmup = data[var][WARM_UP_PERIOD:]
         density = gaussian_kde(data_wo_warmup)
         rangex = np.arange(min(data_wo_warmup), max(data_wo_warmup), NUM_PDF_VALUES)
-        plt.plot(rangex, density(rangex), colors[var], label=var)
+        plt.plot(rangex, density(rangex), *params[var][0], **params[var][1])
     plt.ylabel("pdf")
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles, labels, numpoints=1)
@@ -76,15 +86,15 @@ def draw_plots(data):
     fig.suptitle("time series")
     ax = fig.add_subplot(311)
     time_series_plot(ax, data,
-        ["actMax", "estMax"]
+        ["estMax", "actMax"]
     )
     ax = fig.add_subplot(312)
     time_series_plot(ax, data,
-        ["actAvg", "estAvg"]
+        ["estAvg", "actAvg"]
     )
     ax = fig.add_subplot(313)
     time_series_plot(ax, data,
-        ["actMax", "estMax", "actAvg", "estAvg"]
+        ["estMax", "actMax", "estAvg", "actAvg"]
     )
     fig.savefig(os.path.join(PLOT_PATH, "time_series.png"))
 
