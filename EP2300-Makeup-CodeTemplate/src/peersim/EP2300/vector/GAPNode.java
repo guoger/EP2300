@@ -27,7 +27,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public long maxReqTimeLocal;
 	protected boolean virgin;
 	public long nodeNumInSubtree;
-
+	public double errorBudgetOfSubtree = 0;
 	public long timeWindow = -1;
 
 	// ********************************************
@@ -37,7 +37,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 
 	// *********************************************
 	// ***set initial values, set by initializer****
-	public void setInit(double nodeId) {
+	public void setInit(double nodeId, double err) {
 		this.myId = nodeId;
 		if (nodeId == 0) {
 			System.err.println("I'm root node!");
@@ -56,6 +56,8 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		this.estimatedMax = 0;
 		this.virgin = true;
 		this.nodeNumInSubtree = 1;
+		if (nodeId == 0)
+			this.errorBudgetOfSubtree = err;
 	}
 
 	public GAPNode(String prefix) {

@@ -2,7 +2,7 @@ package peersim.EP2300.control;
 
 import java.util.ArrayList;
 
-import peersim.EP2300.tasks.GAPServerWithRateLimit;
+import peersim.EP2300.tasks.GAPExtension1;
 import peersim.EP2300.vector.GAPNode;
 import peersim.config.Configuration;
 import peersim.core.Control;
@@ -25,13 +25,13 @@ public class NetworkObserver implements Control {
 		double level;
 		int nodeC = 0;
 		GAPNode rootNode;
-		GAPServerWithRateLimit p;
+		GAPExtension1 p;
 		ArrayList<Long> orphanList = new ArrayList<Long>();
 		for (int i = 0; i < Network.size(); ++i) {
 			Node node = Network.get(i);
 			if (node.getID() == 0) {
 				// Change here to adapt to different tasks
-				rootNode = ((GAPServerWithRateLimit) ((Node) node)
+				rootNode = ((GAPExtension1) ((Node) node)
 						.getProtocol(protocolID));
 				System.err.println("Active requests: "
 						+ rootNode.totalReqNumInSubtree);
@@ -40,17 +40,15 @@ public class NetworkObserver implements Control {
 				System.err
 						.println("Nodes number: " + rootNode.nodeNumInSubtree);
 				System.err.println("Actual network size: " + Network.size());
+				System.err.println("Total error budget: "
+						+ rootNode.errorBudgetOfSubtree);
 				// rootNode.printNeighbor();
 			}
-			p = ((GAPServerWithRateLimit) node.getProtocol(protocolID));
+			p = ((GAPExtension1) node.getProtocol(protocolID));
 			level = p.level;
 
-			if (level == 1) {
-				nodeC += ((GAPServerWithRateLimit) node.getProtocol(protocolID)).nodeNumInSubtree;
-			}
-
 			// Change here to adapt to different tasks
-			if (Double.isInfinite((((GAPServerWithRateLimit) node
+			if (Double.isInfinite((((GAPExtension1) node
 					.getProtocol(protocolID)).level))) {
 				orphan = true;
 				orphanList.add(Network.get(i).getID());

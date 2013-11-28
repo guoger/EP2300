@@ -137,8 +137,6 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	}
 
 	private void sendMsgToParent(Node node, int pid) {
-		// TODO send msg to parent. If this is root node, send to all neighbors,
-		// as a heart beat (actually, it's for initialization, DIRTY approach!
 		if (this.parent == Double.POSITIVE_INFINITY)
 			return;
 		if (this.virgin == true && this.myId == 0) {
@@ -175,15 +173,15 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		UpdateVector newMessage = composeMessage(node);
 		if (linkable.degree() > 0) {
 			for (int i = 0; i < linkable.degree(); ++i) {
-				if (msgBudget <= 0)
-					return; // no message budget left, simply return
+				// if (msgBudget < 1)
+				// return; // no message budget left, simply return
 				Node peer = linkable.getNeighbor(i);
 				// The selected peer could be inactive
 				if (!peer.isUp())
 					continue;
 				InstantaneousTransport transport = new InstantaneousTransport();
 				transport.send(node, peer, newMessage, pid);
-				msgBudget--;
+				// msgBudget--;
 			}
 		}
 	}

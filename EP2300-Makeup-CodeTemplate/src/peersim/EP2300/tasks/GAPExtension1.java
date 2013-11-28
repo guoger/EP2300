@@ -1,10 +1,12 @@
 package peersim.EP2300.tasks;
 
+import peersim.EP2300.message.ErrorBudget;
 import peersim.EP2300.message.ResponseTimeArriveMessage;
 import peersim.EP2300.message.TimeOut;
 import peersim.EP2300.message.UpdateVector;
 import peersim.EP2300.transport.ConfigurableDelayTransport;
 import peersim.EP2300.transport.InstantaneousTransport;
+import peersim.EP2300.util.NodeStateVector;
 import peersim.EP2300.util.NodeUtils;
 import peersim.EP2300.vector.GAPNode;
 import peersim.cdsim.CDProtocol;
@@ -16,17 +18,12 @@ import peersim.edsim.EDProtocol;
 
 public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 
-	protected static final String ERROR_OBJECTIVE = "error_objective";
-	private final double errorBudget;
 	private double lastReportedMax;
 	private double lastReportedTotalResponseTime;
 	private double lastReportedTotalNum;
 
 	public GAPExtension1(String prefix) {
 		super(prefix);
-		double errorObj = (Configuration.getDouble(prefix + "."
-				+ ERROR_OBJECTIVE, 5.0));
-		this.errorBudget = errorObj;
 		timeWindow = Configuration.getLong("delta_t");
 		this.lastReportedMax = 0;
 		this.lastReportedTotalNum = 0;
@@ -90,6 +87,29 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		}
 	}
 
+	private void reassignErrBudget(Node node, int pid) {
+		if (this.neighborList == null)
+			return;
+		Linkable linkable = (Linkable) node.getProtocol(FastConfig
+				.getLinkable(pid));
+		double errPerNode = errorBudgetOfSubtree / nodeNumInSubtree;
+		for (int i = 0; i < linkable.degree(); ++i) {
+			Node peer = linkable.getNeighbor(i);
+			if (!peer.isUp() || peer.getID() == parent)
+				continue;
+			NodeStateVector state = this.neighborList
+					.get((double) peer.getID());
+			if (state == null)
+				continue;
+			if (state.status.equals("child")) {
+				double errToAssign = errPerNode * ((double) state.nodeNum);
+				ErrorBudget msg = new ErrorBudget(node, errToAssign);
+				InstantaneousTransport transport = new InstantaneousTransport();
+				transport.send(node, peer, msg, pid);
+			}
+		}
+	}
+
 	private boolean testDiff() {
 		double lastReportedEst;
 		if (this.lastReportedTotalNum == 0) {
@@ -98,8 +118,8 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 			lastReportedEst = this.lastReportedTotalResponseTime
 					/ this.lastReportedTotalNum;
 		}
-		if ((Math.abs(lastReportedMax - this.maxReqTimeInSubtree) > errorBudget)
-				|| (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudget)) {
+		if ((Math.abs(lastReportedMax - this.maxReqTimeInSubtree) > errorBudgetOfSubtree)
+				|| (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudgetOfSubtree)) {
 			lastReportedTotalNum = totalReqNumInSubtree;
 			lastReportedMax = maxReqTimeInSubtree;
 			lastReportedTotalResponseTime = totalReqTimeInSubtree;
@@ -163,12 +183,16 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 			final UpdateVector msg = (UpdateVector) event;
 			double oldLevel = this.level;
 			double oldParent = this.parent;
+			long oldNodeNum = this.nodeNumInSubtree;
 			updateEntry(msg);
 			findNewParent();
 			computeSubtreeValue();
 			if (this.level != oldLevel || this.parent != oldParent) {
 				sendMsgToAllNeighbor(node, pid);
 				return;
+			}
+			if (this.nodeNumInSubtree != oldNodeNum) {
+				reassignErrBudget(node, pid);
 			}
 			if (testDiff()) {
 				sendMsgToParent(node, pid);
@@ -186,6 +210,13 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 			computeSubtreeValue();
 			if (testDiff()) {
 				sendMsgToParent(node, pid);
+			}
+		} else if (event instanceof ErrorBudget) {
+			final ErrorBudget msg = (ErrorBudget) event;
+			double oldErrorBudget = errorBudgetOfSubtree;
+			errorBudgetOfSubtree = msg.errorBudget;
+			if (errorBudgetOfSubtree != oldErrorBudget) {
+				reassignErrBudget(node, pid);
 			}
 		}
 	}

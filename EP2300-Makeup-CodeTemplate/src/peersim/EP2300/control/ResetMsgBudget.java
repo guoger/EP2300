@@ -26,6 +26,8 @@ public class ResetMsgBudget implements Control {
 		ArrayList orphanList = new ArrayList();
 		for (int i = 0; i < Network.size(); ++i) {
 			Node node = Network.get(i);
+			//@formatter:off
+			/*
 			if (node.getID() == 0) {
 				rootNode = ((GAPServerWithRateLimit) ((Node) node)
 						.getProtocol(protocolID));
@@ -34,16 +36,10 @@ public class ResetMsgBudget implements Control {
 				System.err.println("Active requests sum: "
 						+ rootNode.totalReqTimeInSubtree);
 			}
+			*/
+			//@formatter:on
 			((GAPServerWithRateLimit) node.getProtocol(protocolID))
 					.resetMsgBudget();
-			if (Double.isInfinite((((GAPServerWithRateLimit) node
-					.getProtocol(protocolID)).level))) {
-				orphan = true;
-				orphanList.add(Network.get(i).getID());
-			}
-		}
-		if (orphan) {
-			System.err.println(orphanList);
 		}
 
 		return false;
