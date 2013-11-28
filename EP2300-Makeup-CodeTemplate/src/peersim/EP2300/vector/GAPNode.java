@@ -27,7 +27,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public long maxReqTimeLocal;
 	protected boolean virgin;
 	public long nodeNumInSubtree;
-
+	public double errorBudgetOfSubtree = 0;
 	public long timeWindow = -1;
 
 	// ********************************************
@@ -37,7 +37,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 
 	// *********************************************
 	// ***set initial values, set by initializer****
-	public void setInit(double nodeId) {
+	public void setInit(double nodeId, double err) {
 		this.myId = nodeId;
 		if (nodeId == 0) {
 			System.err.println("I'm root node!");
@@ -55,7 +55,9 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		this.estimatedAverage = 0;
 		this.estimatedMax = 0;
 		this.virgin = true;
-		this.nodeNumInSubtree = 0;
+		this.nodeNumInSubtree = 1;
+		if (nodeId == 0)
+			this.errorBudgetOfSubtree = err;
 	}
 
 	public GAPNode(String prefix) {
@@ -154,8 +156,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		long totalReqTime = 0;
 		long activeReqNum = 0;
 		long maxReqTime = 0;
-		long nodeCount = 0;
-		long children = 0;
+		long nodeCount = 1;
 		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
 			double id = entry.getKey();
 			NodeStateVector nodeStateVector = entry.getValue();
@@ -171,10 +172,10 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		// System.out.println("New agg value" + this.value);
 		totalReqNumInSubtree = totalReqNumLocal + activeReqNum;
 		totalReqTimeInSubtree = totalReqTimeLocal + totalReqTime;
-		nodeNumInSubtree = 1 + nodeCount;
-		if (level == 1) {
-			printNeighbor();
-			printMyState();
+		nodeNumInSubtree = nodeCount;
+		if (level == 5) {
+			// printNeighbor();
+			// printMyState();
 		}
 		maxReqTimeInSubtree = (maxReqTimeLocal > maxReqTime) ? this.maxReqTimeLocal
 				: maxReqTime;
@@ -230,6 +231,5 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public void printMyState() {
 		System.err.println(myId + ":\n\t" + "nodeNumInSubtree: "
 				+ nodeNumInSubtree);
-
 	}
 }

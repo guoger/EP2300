@@ -1,13 +1,10 @@
 package peersim.EP2300.tasks;
 
-import java.util.Map.Entry;
-
 import peersim.EP2300.message.ResponseTimeArriveMessage;
 import peersim.EP2300.message.TimeOut;
 import peersim.EP2300.message.UpdateVector;
 import peersim.EP2300.transport.ConfigurableDelayTransport;
 import peersim.EP2300.transport.InstantaneousTransport;
-import peersim.EP2300.util.NodeStateVector;
 import peersim.EP2300.util.NodeUtils;
 import peersim.EP2300.vector.GAPNode;
 import peersim.cdsim.CDProtocol;
@@ -36,7 +33,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		super(prefix);
 		msgBudget_value = (Configuration.getDouble(prefix + "."
 				+ MESSAGE_BUDGET, 5.0));
-		msgBudget = msgBudget_value;
+		msgBudget = 99999; // for warm-up phase, we don't constrain message rate
 		timeWindow = Configuration.getLong("delta_t");
 	}
 
@@ -89,12 +86,12 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			double oldLevel = this.level;
-
+			double oldParent = this.parent;
 			updateEntry(msg);
 			findNewParent();
 			computeSubtreeValue();
 
-			if (this.level != oldLevel) {
+			if (this.level != oldLevel || this.parent != oldParent) {
 				sendMsgToAllNeighbor(node, pid);
 				return;
 			}
@@ -103,18 +100,6 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
 				sendMsgToParent(node, pid);
-			}
-			boolean findParent = false;
-			for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
-				double id = entry.getKey();
-				NodeStateVector nodeStateVector = entry.getValue();
-				if (nodeStateVector.status.equals("parent")) {
-					if (findParent == true) {
-						System.err.println("multiple parents!!!!!!!");
-					} else {
-						findParent = true;
-					}
-				}
 			}
 
 		} else if (event instanceof TimeOut) {
@@ -152,12 +137,11 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	}
 
 	private void sendMsgToParent(Node node, int pid) {
-		// TODO send msg to parent. If this is root node, send to all neighbors,
-		// as a heart beat (actually, it's for initialization, DIRTY approach!
 		if (this.parent == Double.POSITIVE_INFINITY)
 			return;
-		if (this.myId == 0) {
+		if (this.virgin == true && this.myId == 0) {
 			sendMsgToAllNeighbor(node, pid);
+			this.virgin = false;
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig
 					.getLinkable(pid));
@@ -189,15 +173,15 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		UpdateVector newMessage = composeMessage(node);
 		if (linkable.degree() > 0) {
 			for (int i = 0; i < linkable.degree(); ++i) {
-				if (msgBudget <= 0)
-					return; // no message budget left, simply return
+				// if (msgBudget < 1)
+				// return; // no message budget left, simply return
 				Node peer = linkable.getNeighbor(i);
 				// The selected peer could be inactive
 				if (!peer.isUp())
 					continue;
 				InstantaneousTransport transport = new InstantaneousTransport();
 				transport.send(node, peer, newMessage, pid);
-				msgBudget--;
+				// msgBudget--;
 			}
 		}
 	}
