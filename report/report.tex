@@ -60,63 +60,26 @@
 \maketitle
 % }}}
 \thispagestyle{firststyle}
-\section{Task I}
-\begin{lstlisting}[caption={inspired by \cite{stadler2012protocols}}, numbers=left, frame=single]
-messages:
-(new, n)
-(fail, n)
-(update, n; l; p; a)
-(localvar, x)
-
-procedure GAP( )
-    T := empty table;
-    if v = root then
-        addEntry(root, parent, -1, undef);
-        addEntry(root, self, 0, undef);
-    else
-        addEntry(v, self, undef, undef);
-    end if
-    vector := updateVector();
-    send (update, v; vector) to all neighbors;
-    A.initiate();
-    while true do
-        read message;
-        switch (message)
-            case (new, from):
-                addEntry(from, peer, undef, undef);
-                send (update, v; vector) to from;
-            case (fail, from):
-                removeEntry(from);
-            case (localvar, x):
-                empty;
-            case (update, from; level; parent; aggregate):
-                updateEntry(from; level; parent; aggregate);
-        end switch
-        restoreTableInvariant();
-        A.aggregate(); if (v =root) then A.global();
-        newvector := updateVector();
-        if newvector 6 = vector then
-            send (update, v; newvector) to all neighbors;
-            vector := newvector;
-        end if
-    end while
-    end procedure
-\end{lstlisting}
+\section{Task}
+\subsection{Pseudocode}
 \begin{lstlisting}[caption={inspired by \cite{stadler2012protocols}}, numbers=left, frame=single]
 messages:
 (ResponseTimeArriveMessage, responseTime)
 (UpdateVector, neighbor)
 (TimeOut, responseTime)
 
-help functions:
-A.aggregate_local
-A.aggregate_sub_tree
-A.value
-A.global
-send_to_self
-send_to_neighbors
-send_to_parent
-find_parent
+objects and help functions:
+A       # storing values for and performing aggregation
+Comm    # communication messages
+A.aggregate_local       # aggregate local response times for local statistics
+A.aggregate_sub_tree    # combine local values with children's for statistics
+                        #  of the whole subtree
+A.value                 # values of statistics of subtree (including own)
+Comm.send_to_self       # send a message to the own node with a delay
+Comm.send_to_neighbors  # send to all specified neighbors
+Comm.send_to_parent     # send to parent
+find_parent             # among neighbors, choose first with minimum level as
+                        #  new parent
 
 procedure GAP( )
     DELAY = # fixed time window
@@ -138,7 +101,7 @@ procedure GAP( )
             case (ResponseTimeArriveMessage, responseTime)
                 ResponseTimes.add(responseTime)
                 # to keep only a set of responseTimes in cache
-                send_to_self(DELAY, TimeOut(responseTime))
+                Comm.send_to_self(DELAY, TimeOut(responseTime))
                 A.aggregate_local(ResponseTimes)
                 A.aggregate_sub_tree(Neighbors)
             case (UpdateVector, neighbor):
@@ -148,7 +111,7 @@ procedure GAP( )
                 if level != newLevel then
                     level = newLevel
                     parent = newParent
-                    send_to_neighbors(Neighbors, level, parent, A.value())
+                    Comm.send_to_neighbors(Neighbors, level, parent, A.value())
                     continue
                 end if
             # to keep only a set of responseTimes in cache
@@ -157,15 +120,84 @@ procedure GAP( )
                 A.aggregate_local_value(ResponseTimes)
                 A.aggregate_sub_tree(Neighbors)
         end switch
-        if (v =root) then A.global()
+        Comm.send_to_parent(Neighbors, A.value)
+    end while
+    end procedure
+\end{lstlisting}
+\subsection{Implementation Details}
+A new base class was implemented which all of the tasks extend: \texttt{peersim.EP2300.vector.GAPNode}. In \texttt{peersim.EP2300.message} three new messages were introduced: \texttt{ResponseTimeArriveMessage}, \texttt{UpdateVector}, \texttt{TimeOut}. The first two roughly equal \texttt{LOCALVAR} and \texttt{UPDATE} from the original technical report (see \cite{stadler2012protocols}).
 
-        # TODO: reformulate below!!!
-        newvector := updateVector();
-        if newvector != vector then
-            send (update, newvector) to all neighbors;
-            vector := newvector;
-        end if
-        send_to_parent(Neighbors, A.value)
+Each node stores all its information on it's neighbors as \texttt{NodeStateVector} in a SortMap named \texttt{neighborList}. Details on the nodes response times are stored in the ArrayList \texttt{requestList}. To focus only on the response times in the current time window, every response time is assigned a time out.
+
+For the implementation with rate control, every message send to the parent will trigger a decrease of the msg budget. As soon as the msg budget is lower or equal to 0, no more messages are sent out. The message budget is reset via a new control \texttt{peersim.EP2300.control.ResetMsgBudget}.
+\subsection{Results}
+\begin{enumerate}
+    \item time series of f(t) and f(t) for r = \{0.2,0.4,0.8\} and \{R1\} from the first 5 minutes
+    \item time series of f(t) and f(t) for r = \{0.2,0.4,0.8\} and \{R1\} after the first 5 minutes
+    \item trade-off plots for both \{R1,R2\} (and all rate options?? 0.1,0.2,0.4,0.8,1.6)
+    \item density plots for r = \{0.2, 0.4, 0.8\} and \{R1,R2\}
+\end{enumerate}
+
+\section*{Task 2}
+\begin{lstlisting}[caption={inspired by \cite{stadler2012protocols}}, numbers=left, frame=single]
+messages:
+(ResponseTimeArriveMessage, responseTime)
+(UpdateVector, neighbor)
+(TimeOut, responseTime)
+
+objects and help functions:
+A       # storing values for and performing aggregation
+Comm    # communication messages
+A.aggregate_local       # aggregate local response times for local statistics
+A.aggregate_sub_tree    # combine local values with children's for statistics
+                        #  of the whole subtree
+A.value                 # values of statistics of subtree (including own)
+Comm.send_to_self       # send a message to the own node with a delay
+Comm.send_to_neighbors  # send to all specified neighbors
+Comm.send_to_parent     # send to parent
+find_parent             # among neighbors, choose first with minimum level as
+                        #  new parent
+
+procedure GAP( )
+    DELAY = # fixed time window
+    Neighbors := empty;
+    ResponseTimes := empty;
+
+    if v = root then
+        level = 0
+        parent = 0
+    else
+        level = INF
+        parent = INF
+    end if
+
+    A.initiate()
+    while true do
+        read message;
+        switch (message)
+            case (ResponseTimeArriveMessage, responseTime)
+                ResponseTimes.add(responseTime)
+                # to keep only a set of responseTimes in cache
+                Comm.send_to_self(DELAY, TimeOut(responseTime))
+                A.aggregate_local(ResponseTimes)
+                A.aggregate_sub_tree(Neighbors)
+            case (UpdateVector, neighbor):
+                Neighbors.add(neighbor) 
+                (newParent, newLevel) = find_new_parent(Neighbors)
+                A.aggregate_sub_tree(Neighbors)
+                if level != newLevel then
+                    level = newLevel
+                    parent = newParent
+                    Comm.send_to_neighbors(Neighbors, level, parent, A.value())
+                    continue
+                end if
+            # to keep only a set of responseTimes in cache
+            case (TimeOut, responseTime):
+                responses.remove(responseTime)
+                A.aggregate_local_value(ResponseTimes)
+                A.aggregate_sub_tree(Neighbors)
+        end switch
+        Comm.send_to_parent(Neighbors, A.value)
     end while
     end procedure
 \end{lstlisting}
@@ -191,8 +223,6 @@ procedure GAP( )
     \caption{PDF plot}
     \label{fig:pdf}
 \end{figure}
-
-
 
 \begin{itemize}
     \item compare performance for $R_1, R_2$
