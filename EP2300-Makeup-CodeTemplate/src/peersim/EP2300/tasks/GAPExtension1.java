@@ -30,6 +30,9 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		this.lastReportedTotalResponseTime = 0;
 	}
 
+	/**
+	 * Send message between nodes via instantaneous transport
+	 */
 	protected void sendWithInstTransport(Node src, Node dest, Object event) {
 		int pid = Configuration.getPid("ACTIVE_PROTOCOL");
 
@@ -38,6 +41,14 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		t.send(src, dest, event, pid);
 	}
 
+	/**
+	 * set up a time out for a particular responseTime, use responseTime value
+	 * as unique ID and time window as delay. This message is considered as
+	 * internal message, thus won't be counted as overhead
+	 * 
+	 * @param pid
+	 * @param element
+	 */
 	private void scheduleATimeOut(int pid, long element) {
 		TimeOut timeOut = new TimeOut(element);
 		Node dest = NodeUtils.getInstance().getNodeByID((long) this.myId);
@@ -47,6 +58,12 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		transport.send(null, dest, timeOut, pid);
 	}
 
+	/**
+	 * Send a message to my parent
+	 * 
+	 * @param node
+	 * @param pid
+	 */
 	private void sendMsgToParent(Node node, int pid) {
 		// TODO send msg to parent. If this is root node, send to all neighbors,
 		// as a heart beat (actually, it's for initialization, DIRTY approach!
@@ -70,6 +87,12 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		}
 	}
 
+	/**
+	 * Send a message to all neighbor
+	 * 
+	 * @param node
+	 * @param pid
+	 */
 	private void sendMsgToAllNeighbor(Node node, int pid) {
 		// System.out.println("Have msg budget" + this.msgBudget);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
@@ -87,6 +110,12 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		}
 	}
 
+	/**
+	 * Reassign subtree error budget based on my subtree table
+	 * 
+	 * @param node
+	 * @param pid
+	 */
 	private void reassignErrBudget(Node node, int pid) {
 		if (this.neighborList == null)
 			return;
@@ -110,6 +139,11 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		}
 	}
 
+	/**
+	 * Test whether the change exceed error limit
+	 * 
+	 * @return
+	 */
 	private boolean testDiff() {
 		double lastReportedEst;
 		if (this.lastReportedTotalNum == 0) {
@@ -129,44 +163,14 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 		}
 	}
 
-//@formatter:off
-	/*
-	private boolean testDiff() {
-		// N -> 0 or 0 -> N
-		if ((lastReportedMax == 0 && totalReqTimeInSubtree != 0)
-				|| (lastReportedMax != 0 && totalReqTimeInSubtree == 0)) {
-			lastReportedMax = maxReqTimeInSubtree;
-			lastReportedTotalResponseTime = totalReqTimeInSubtree;
-			lastReportedTotalNum = totalReqNumInSubtree;
-			return true;
-		}
-		if (lastReportedMax == 0 && totalReqTimeInSubtree == 0) {
-			return false;
-		}
-		boolean maxResTimeExceedErrorObj = ((Math.abs(maxReqTimeInSubtree
-				- lastReportedMax) / lastReportedMax) > errorObj);
-		double lastReportedAvg = lastReportedTotalResponseTime
-				/ lastReportedTotalNum;
-		boolean avgResTimeExceedErrorObj = (Math.abs(lastReportedAvg
-				- estimatedAverage)
-				/ lastReportedAvg > errorObj);
-		if (maxResTimeExceedErrorObj || avgResTimeExceedErrorObj) {
-			lastReportedMax = maxReqTimeInSubtree;
-			lastReportedTotalResponseTime = totalReqTimeInSubtree;
-			lastReportedTotalNum = totalReqNumInSubtree;
-			return true;
-		} else {
-			return false;
-		}
-	}
-*/
-//@formatter:on
 	// *********************************************************************
 	// *********************************************************************
 
 	@Override
 	public void processEvent(Node node, int pid, Object event) {
-		// Implement your event-driven code for task 2 here
+		/*
+		 * message type of new response time arrive, internal message
+		 */
 		if (event instanceof ResponseTimeArriveMessage) {
 			final ResponseTimeArriveMessage newRequest = (ResponseTimeArriveMessage) event;
 			long resTime = newRequest.getResponseTime();
@@ -179,6 +183,10 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 			if (testDiff()) {
 				sendMsgToParent(node, pid);
 			}
+
+			/*
+			 * Message type vector, external message
+			 */
 		} else if (event instanceof UpdateVector) {
 			final UpdateVector msg = (UpdateVector) event;
 			double oldLevel = this.level;
