@@ -6,16 +6,14 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import peersim.EP2300.base.GAPProtocolBase;
-import peersim.EP2300.message.UpdateVector;
-import peersim.EP2300.util.NodeStateVector;
+import peersim.EP2300.message.UpdateVectorTask2;
+import peersim.EP2300.util.NodeStateVectorTask2;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class GAPNode extends GAPProtocolBase implements Protocol {
-	/*
-	 * These variables are public because they need to be accessible by observer
-	 */
+public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
+
 	public double parent;
 	public double myId;
 	public double level;
@@ -23,24 +21,23 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public long totalReqTimeLocal;
 	public long totalReqNumInSubtree;
 	public long totalReqNumLocal;
-	public long maxReqTimeInSubtree;
-	public long maxReqTimeLocal;
 	protected boolean virgin;
-	public long nodeNumInSubtree;
 	public double errorBudgetOfSubtree = 0;
 	public long timeWindow = -1;
 
-	// ********************************************
-
-	public SortedMap<Double, NodeStateVector> neighborList;
+	public SortedMap<Double, NodeStateVectorTask2> neighborList;
 	public ArrayList<Long> requestList;
 
-	// *********************************************
-	// ***set initial values, set by initializer****
+	public GAPNodeTask2(String prefix) {
+		super(prefix);
+		this.neighborList = new TreeMap<Double, NodeStateVectorTask2>();
+		this.requestList = new ArrayList<Long>();
+		timeWindow = Configuration.getLong("delta_t");
+	}
+
 	public void setInit(double nodeId, double err) {
 		this.myId = nodeId;
 		if (nodeId == 0) {
-			System.err.println("I'm root node!");
 			this.level = 0;
 			this.parent = 0;
 		} else {
@@ -51,20 +48,10 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		this.totalReqNumLocal = 0;
 		this.totalReqTimeInSubtree = 0;
 		this.totalReqTimeLocal = 0;
-		this.maxReqTimeInSubtree = 0;
 		this.estimatedAverage = 0;
 		this.estimatedMax = 0;
 		this.virgin = true;
-		this.nodeNumInSubtree = 1;
-		if (nodeId == 0)
-			this.errorBudgetOfSubtree = err;
-	}
-
-	public GAPNode(String prefix) {
-		super(prefix);
-		this.neighborList = new TreeMap<Double, NodeStateVector>();
-		this.requestList = new ArrayList<Long>();
-		timeWindow = Configuration.getLong("delta_t");
+		this.errorBudgetOfSubtree = err;
 	}
 
 	/**
@@ -72,7 +59,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	 * aggregate value Return true if an update message need to sent, otherwise
 	 * return false
 	 */
-	public void updateEntry(UpdateVector msg) {
+	public void updateEntry(UpdateVectorTask2 msg) {
 		if (msg.sender == null) {
 			return;
 			// should never happen since we don't acknowledge msg in GAP
@@ -82,31 +69,23 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		double srcLevel = msg.level;
 		long totalReqTime = msg.totalReqTimeInSubtree;
 		long totalReqNum = msg.totalReqNumInSubtree;
-		long maxReqTime = msg.maxReqTimeInSubtree;
-		long nodeCount = msg.nodeNumInSubtree;
-		NodeStateVector nodeStateVector = null;
+		NodeStateVectorTask2 nodeStateVector = null;
 		if (srcParent == this.myId) {
 			// message from child (both new and old)
-			nodeStateVector = new NodeStateVector("child", srcLevel,
-					totalReqTime, totalReqNum, maxReqTime, nodeCount);
+			nodeStateVector = new NodeStateVectorTask2("child", srcLevel,
+					totalReqTime, totalReqNum);
 		} else if (srcId == this.parent) {
 			// message from parent
-			nodeStateVector = new NodeStateVector("parent", srcLevel,
-					totalReqTime, totalReqNum, maxReqTime, nodeCount);
+			nodeStateVector = new NodeStateVectorTask2("parent", srcLevel,
+					totalReqTime, totalReqNum);
 		} else {
 			// message from peer
-			nodeStateVector = new NodeStateVector("peer", srcLevel,
-					totalReqTime, totalReqNum, maxReqTime, nodeCount);
+			nodeStateVector = new NodeStateVectorTask2("peer", srcLevel,
+					totalReqTime, totalReqNum);
 		}
 		this.neighborList.put(srcId, nodeStateVector);
 	}
 
-	/**
-	 * Traverse subtree table and search for a new parent with shorter path to
-	 * root. If new parent found, return true, otherwise, return false
-	 * 
-	 * @return
-	 */
 	public boolean findNewParent() {
 		if (this.myId == 0)
 			// I'm root, I don't have parent
@@ -116,9 +95,10 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		boolean findParent = false;
 		double minLevel = Double.POSITIVE_INFINITY;
 		double newParent = this.parent;
-		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
+		for (Entry<Double, NodeStateVectorTask2> entry : neighborList
+				.entrySet()) {
 			double id = entry.getKey();
-			NodeStateVector nodeStateVector = entry.getValue();
+			NodeStateVectorTask2 nodeStateVector = entry.getValue();
 			// find a node with smallest level
 
 			if (nodeStateVector.level < minLevel) {
@@ -155,38 +135,22 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		}
 	}
 
-	/**
-	 * Update table according to local value and children value
-	 */
 	public void computeSubtreeValue() {
 		long totalReqTime = 0;
 		long activeReqNum = 0;
 		long maxReqTime = 0;
-		long nodeCount = 1;
-		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
+		for (Entry<Double, NodeStateVectorTask2> entry : neighborList
+				.entrySet()) {
 			double id = entry.getKey();
-			NodeStateVector nodeStateVector = entry.getValue();
+			NodeStateVectorTask2 nodeStateVector = entry.getValue();
 			if (nodeStateVector.status.equals("child")) {
 				totalReqTime += nodeStateVector.totalReqTime;
 				activeReqNum += nodeStateVector.totalReqNum;
-				nodeCount += nodeStateVector.nodeNum;
-				if (nodeStateVector.maxReqTime > maxReqTime) {
-					maxReqTime = nodeStateVector.maxReqTime;
-				}
 			}
 		}
 		// System.out.println("New agg value" + this.value);
 		totalReqNumInSubtree = totalReqNumLocal + activeReqNum;
 		totalReqTimeInSubtree = totalReqTimeLocal + totalReqTime;
-		nodeNumInSubtree = nodeCount;
-		if (level == 5) {
-			// printNeighbor();
-			// printMyState();
-		}
-		maxReqTimeInSubtree = (maxReqTimeLocal > maxReqTime) ? this.maxReqTimeLocal
-				: maxReqTime;
-
-		estimatedMax = maxReqTimeInSubtree;
 		if (totalReqNumInSubtree != 0) {
 			estimatedAverage = (double) totalReqTimeInSubtree
 					/ (double) totalReqNumInSubtree;
@@ -195,11 +159,6 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		}
 	}
 
-	/**
-	 * Update local value
-	 * 
-	 * @return
-	 */
 	public void computeLocalValue() {
 		long sum = 0;
 		long max = 0;
@@ -210,32 +169,11 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		}
 		this.totalReqNumLocal = requestList.size();
 		this.totalReqTimeLocal = sum;
-		this.maxReqTimeLocal = max;
 	}
 
-	public UpdateVector composeMessage(Node node) {
-		UpdateVector outMsg = new UpdateVector(node, level, parent,
-				totalReqTimeInSubtree, totalReqNumInSubtree,
-				maxReqTimeInSubtree, nodeNumInSubtree);
+	public UpdateVectorTask2 composeMessage(Node node) {
+		UpdateVectorTask2 outMsg = new UpdateVectorTask2(node, level, parent,
+				totalReqTimeInSubtree, totalReqNumInSubtree);
 		return outMsg;
-	}
-
-	// **********************************************************************
-	// ################## for debug #########################################
-
-	public void printNeighbor() {
-		System.err.println(myId);
-		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
-			double id = entry.getKey();
-			NodeStateVector nodeStateVector = entry.getValue();
-			System.err.println("\t" + id + "\t==>\t" + nodeStateVector.level
-					+ "\t" + nodeStateVector.status + "\t"
-					+ nodeStateVector.nodeNum);
-		}
-	}
-
-	public void printMyState() {
-		System.err.println(myId + ":\n\t" + "nodeNumInSubtree: "
-				+ nodeNumInSubtree);
 	}
 }
