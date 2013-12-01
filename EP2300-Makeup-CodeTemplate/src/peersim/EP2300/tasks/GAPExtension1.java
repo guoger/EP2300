@@ -19,15 +19,11 @@ import peersim.edsim.EDProtocol;
 public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 
 	private double lastReportedMax;
-	private double lastReportedTotalResponseTime;
-	private double lastReportedTotalNum;
 
 	public GAPExtension1(String prefix) {
 		super(prefix);
 		timeWindow = Configuration.getLong("delta_t");
 		this.lastReportedMax = 0;
-		this.lastReportedTotalNum = 0;
-		this.lastReportedTotalResponseTime = 0;
 	}
 
 	/**
@@ -145,18 +141,8 @@ public class GAPExtension1 extends GAPNode implements EDProtocol, CDProtocol {
 	 * @return
 	 */
 	private boolean testDiff() {
-		double lastReportedEst;
-		if (this.lastReportedTotalNum == 0) {
-			lastReportedEst = 0;
-		} else {
-			lastReportedEst = this.lastReportedTotalResponseTime
-					/ this.lastReportedTotalNum;
-		}
-		if ((Math.abs(lastReportedMax - this.maxReqTimeInSubtree) > errorBudgetOfSubtree)
-				|| (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudgetOfSubtree)) {
-			lastReportedTotalNum = totalReqNumInSubtree;
+		if (Math.abs(lastReportedMax - this.maxReqTimeInSubtree) > errorBudgetOfSubtree) {
 			lastReportedMax = maxReqTimeInSubtree;
-			lastReportedTotalResponseTime = totalReqTimeInSubtree;
 			return true;
 		} else {
 			return false;
