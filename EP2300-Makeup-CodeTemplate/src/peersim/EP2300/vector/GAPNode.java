@@ -19,10 +19,6 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public double parent;
 	public double myId;
 	public double level;
-	public long totalReqTimeInSubtree;
-	public long totalReqTimeLocal;
-	public long totalReqNumInSubtree;
-	public long totalReqNumLocal;
 	public long maxReqTimeInSubtree;
 	public long maxReqTimeLocal;
 	protected boolean virgin;
@@ -47,10 +43,6 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			this.parent = Double.POSITIVE_INFINITY;
 			this.level = Double.POSITIVE_INFINITY;
 		}
-		this.totalReqNumInSubtree = 0;
-		this.totalReqNumLocal = 0;
-		this.totalReqTimeInSubtree = 0;
-		this.totalReqTimeLocal = 0;
 		this.maxReqTimeInSubtree = 0;
 		this.estimatedAverage = 0;
 		this.estimatedMax = 0;
@@ -80,23 +72,21 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		double srcParent = msg.parent;
 		double srcId = msg.sender.getID();
 		double srcLevel = msg.level;
-		long totalReqTime = msg.totalReqTimeInSubtree;
-		long totalReqNum = msg.totalReqNumInSubtree;
 		long maxReqTime = msg.maxReqTimeInSubtree;
 		long nodeCount = msg.nodeNumInSubtree;
 		NodeStateVector nodeStateVector = null;
 		if (srcParent == this.myId) {
 			// message from child (both new and old)
 			nodeStateVector = new NodeStateVector("child", srcLevel,
-					totalReqTime, totalReqNum, maxReqTime, nodeCount);
+					maxReqTime, nodeCount);
 		} else if (srcId == this.parent) {
 			// message from parent
 			nodeStateVector = new NodeStateVector("parent", srcLevel,
-					totalReqTime, totalReqNum, maxReqTime, nodeCount);
+					maxReqTime, nodeCount);
 		} else {
 			// message from peer
-			nodeStateVector = new NodeStateVector("peer", srcLevel,
-					totalReqTime, totalReqNum, maxReqTime, nodeCount);
+			nodeStateVector = new NodeStateVector("peer", srcLevel, maxReqTime,
+					nodeCount);
 		}
 		this.neighborList.put(srcId, nodeStateVector);
 	}
@@ -113,7 +103,6 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			return false;
 		if (this.neighborList.isEmpty())
 			return false;
-		boolean findParent = false;
 		double minLevel = Double.POSITIVE_INFINITY;
 		double newParent = this.parent;
 		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
@@ -167,32 +156,17 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			double id = entry.getKey();
 			NodeStateVector nodeStateVector = entry.getValue();
 			if (nodeStateVector.status.equals("child")) {
-				totalReqTime += nodeStateVector.totalReqTime;
-				activeReqNum += nodeStateVector.totalReqNum;
 				nodeCount += nodeStateVector.nodeNum;
 				if (nodeStateVector.maxReqTime > maxReqTime) {
 					maxReqTime = nodeStateVector.maxReqTime;
 				}
 			}
 		}
-		// System.out.println("New agg value" + this.value);
-		totalReqNumInSubtree = totalReqNumLocal + activeReqNum;
-		totalReqTimeInSubtree = totalReqTimeLocal + totalReqTime;
 		nodeNumInSubtree = nodeCount;
-		if (level == 5) {
-			// printNeighbor();
-			// printMyState();
-		}
 		maxReqTimeInSubtree = (maxReqTimeLocal > maxReqTime) ? this.maxReqTimeLocal
 				: maxReqTime;
 
 		estimatedMax = maxReqTimeInSubtree;
-		if (totalReqNumInSubtree != 0) {
-			estimatedAverage = (double) totalReqTimeInSubtree
-					/ (double) totalReqNumInSubtree;
-		} else {
-			estimatedAverage = 0;
-		}
 	}
 
 	/**
@@ -208,14 +182,11 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			if (requestList.get(i) > max)
 				max = requestList.get(i);
 		}
-		this.totalReqNumLocal = requestList.size();
-		this.totalReqTimeLocal = sum;
 		this.maxReqTimeLocal = max;
 	}
 
 	public UpdateVector composeMessage(Node node) {
 		UpdateVector outMsg = new UpdateVector(node, level, parent,
-				totalReqTimeInSubtree, totalReqNumInSubtree,
 				maxReqTimeInSubtree, nodeNumInSubtree);
 		return outMsg;
 	}

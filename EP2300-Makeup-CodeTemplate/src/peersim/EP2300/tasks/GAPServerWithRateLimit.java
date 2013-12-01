@@ -21,9 +21,6 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	 * Initial message budget. Defaults to 5
 	 */
 	protected static final String MESSAGE_BUDGET = "rate_control";
-
-	private final double msgBudget_value;
-
 	// private long timeWindow = 0;
 
 	protected double msgBudget;
@@ -31,8 +28,6 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 
 	public GAPServerWithRateLimit(String prefix) {
 		super(prefix);
-		msgBudget_value = (Configuration.getDouble(prefix + "."
-				+ MESSAGE_BUDGET, 5.0));
 		msgBudget = 99999; // for warm-up phase, we don't constrain message rate
 		timeWindow = Configuration.getLong("delta_t");
 	}
@@ -40,7 +35,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	// If protocol and control are in the same package, this method could be
 	// protected
 	public void resetMsgBudget() {
-		this.msgBudget = msgBudget_value;
+		this.msgBudget = 1;
 	}
 
 	protected void sendWithInstTransport(Node src, Node dest, Object event) {
@@ -66,24 +61,16 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			long resTime = newRequest.getResponseTime();
 			this.requestList.add(resTime);
 			scheduleATimeOut(pid, resTime);
-			// System.out.print("Load change: " + this.value);
-			// TODO put code below to a updateLocal()
-			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
-			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			computeLocalValue();
 			computeSubtreeValue();
-			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
-					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
-					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+			if (this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof UpdateVector) {
 			final UpdateVector msg = (UpdateVector) event;
 			// store old data
-			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
-			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			double oldLevel = this.level;
 			double oldParent = this.parent;
@@ -95,9 +82,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 				sendMsgToAllNeighbor(node, pid);
 				return;
 			}
-			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
-					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
-					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+			if (this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
@@ -111,15 +96,10 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			 */
 			final TimeOut msg = (TimeOut) event;
 			this.requestList.remove(msg.elementIndex);
-			// TODO put code below to a updateLocal()
-			long oldTotalReqTimeInSubtree = this.totalReqTimeInSubtree;
-			long oldTotalReqNumInSubtree = this.totalReqNumInSubtree;
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			computeLocalValue();
 			computeSubtreeValue();
-			if (this.totalReqTimeInSubtree != oldTotalReqTimeInSubtree
-					|| this.totalReqNumInSubtree != oldTotalReqNumInSubtree
-					|| this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+			if (this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
@@ -147,7 +127,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 					.getLinkable(pid));
 			UpdateVector newMessage = composeMessage(node);
 			for (int i = 0; i < linkable.degree(); ++i) {
-				if (msgBudget < 1.0)
+				if (msgBudget < 1)
 					return; // no message budget left, simply return
 				Node peer = linkable.getNeighbor(i);
 				if (peer.getID() == this.parent && peer.isUp()) {
@@ -173,15 +153,15 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		UpdateVector newMessage = composeMessage(node);
 		if (linkable.degree() > 0) {
 			for (int i = 0; i < linkable.degree(); ++i) {
-				// if (msgBudget < 1)
-				// return; // no message budget left, simply return
+				if (msgBudget < 1)
+					return; // no message budget left, simply return
 				Node peer = linkable.getNeighbor(i);
 				// The selected peer could be inactive
 				if (!peer.isUp())
 					continue;
 				InstantaneousTransport transport = new InstantaneousTransport();
 				transport.send(node, peer, newMessage, pid);
-				// msgBudget--;
+				msgBudget--;
 			}
 		}
 	}
