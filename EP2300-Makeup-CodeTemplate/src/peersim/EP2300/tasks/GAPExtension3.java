@@ -3,12 +3,12 @@ package peersim.EP2300.tasks;
 import peersim.EP2300.message.ErrorBudget;
 import peersim.EP2300.message.ResponseTimeArriveMessage;
 import peersim.EP2300.message.TimeOut;
-import peersim.EP2300.message.UpdateVector;
+import peersim.EP2300.message.UpdateVectorMax;
 import peersim.EP2300.transport.ConfigurableDelayTransport;
 import peersim.EP2300.transport.InstantaneousTransport;
-import peersim.EP2300.util.NodeStateVector;
+import peersim.EP2300.util.NodeStateVectorMax;
 import peersim.EP2300.util.NodeUtils;
-import peersim.EP2300.vector.GAPNode;
+import peersim.EP2300.vector.GAPNodeMax;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
 import peersim.config.FastConfig;
@@ -16,7 +16,7 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 
-public class GAPExtension3 extends GAPNode implements EDProtocol, CDProtocol {
+public class GAPExtension3 extends GAPNodeMax implements EDProtocol, CDProtocol {
 
 	private double lastReportedMax;
 	private double lastReportedTotalResponseTime;
@@ -58,7 +58,7 @@ public class GAPExtension3 extends GAPNode implements EDProtocol, CDProtocol {
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig
 					.getLinkable(pid));
-			UpdateVector newMessage = composeMessage(node);
+			UpdateVectorMax newMessage = composeMessage(node);
 			for (int i = 0; i < linkable.degree(); ++i) {
 				Node peer = linkable.getNeighbor(i);
 				if (peer.getID() == this.parent && peer.isUp()) {
@@ -74,7 +74,7 @@ public class GAPExtension3 extends GAPNode implements EDProtocol, CDProtocol {
 		// System.out.println("Have msg budget" + this.msgBudget);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));
-		UpdateVector newMessage = composeMessage(node);
+		UpdateVectorMax newMessage = composeMessage(node);
 		if (linkable.degree() > 0) {
 			for (int i = 0; i < linkable.degree(); ++i) {
 				Node peer = linkable.getNeighbor(i);
@@ -92,12 +92,12 @@ public class GAPExtension3 extends GAPNode implements EDProtocol, CDProtocol {
 			return;
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));
-		double errPerNode = errorBudgetOfSubtree / nodeNumInSubtree;
+		double errPerNode = errorBudget / nodeNumInSubtree;
 		for (int i = 0; i < linkable.degree(); ++i) {
 			Node peer = linkable.getNeighbor(i);
 			if (!peer.isUp() || peer.getID() == parent)
 				continue;
-			NodeStateVector state = this.neighborList
+			NodeStateVectorMax state = this.neighborList
 					.get((double) peer.getID());
 			if (state == null)
 				continue;
@@ -118,8 +118,8 @@ public class GAPExtension3 extends GAPNode implements EDProtocol, CDProtocol {
 			lastReportedEst = this.lastReportedTotalResponseTime
 					/ this.lastReportedTotalNum;
 		}
-		if ((Math.abs(lastReportedMax - this.maxReqTimeInSubtree) > errorBudgetOfSubtree)
-				|| (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudgetOfSubtree)) {
+		if ((Math.abs(lastReportedMax - this.maxReqTimeInSubtree) > errorBudget)
+				|| (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudget)) {
 			lastReportedTotalNum = totalReqNumInSubtree;
 			lastReportedMax = maxReqTimeInSubtree;
 			lastReportedTotalResponseTime = totalReqTimeInSubtree;
@@ -147,8 +147,8 @@ public class GAPExtension3 extends GAPNode implements EDProtocol, CDProtocol {
 			if (testDiff()) {
 				sendMsgToParent(node, pid);
 			}
-		} else if (event instanceof UpdateVector) {
-			final UpdateVector msg = (UpdateVector) event;
+		} else if (event instanceof UpdateVectorMax) {
+			final UpdateVectorMax msg = (UpdateVectorMax) event;
 			double oldLevel = this.level;
 			double oldParent = this.parent;
 			long oldNodeNum = this.nodeNumInSubtree;
@@ -181,9 +181,9 @@ public class GAPExtension3 extends GAPNode implements EDProtocol, CDProtocol {
 			}
 		} else if (event instanceof ErrorBudget) {
 			final ErrorBudget msg = (ErrorBudget) event;
-			double oldErrorBudget = errorBudgetOfSubtree;
-			errorBudgetOfSubtree = msg.errorBudget;
-			if (errorBudgetOfSubtree != oldErrorBudget) {
+			double oldErrorBudget = errorBudget;
+			errorBudget = msg.errorBudget;
+			if (errorBudget != oldErrorBudget) {
 				reassignErrBudget(node, pid);
 			}
 		}

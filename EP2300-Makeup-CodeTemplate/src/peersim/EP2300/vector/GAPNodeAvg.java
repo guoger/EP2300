@@ -6,13 +6,13 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import peersim.EP2300.base.GAPProtocolBase;
-import peersim.EP2300.message.UpdateVectorTask2;
+import peersim.EP2300.message.UpdateVectorAvg;
 import peersim.EP2300.util.NodeStateVectorTask2;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
+public class GAPNodeAvg extends GAPProtocolBase implements Protocol {
 
 	public double parent;
 	public double myId;
@@ -22,13 +22,13 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 	public long totalReqNumInSubtree;
 	public long totalReqNumLocal;
 	protected boolean virgin;
-	public double errorBudgetOfSubtree = 0;
+	public double errorBudget = 0;
 	public long timeWindow = -1;
 
 	public SortedMap<Double, NodeStateVectorTask2> neighborList;
 	public ArrayList<Long> requestList;
 
-	public GAPNodeTask2(String prefix) {
+	public GAPNodeAvg(String prefix) {
 		super(prefix);
 		this.neighborList = new TreeMap<Double, NodeStateVectorTask2>();
 		this.requestList = new ArrayList<Long>();
@@ -51,7 +51,7 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 		this.estimatedAverage = 0;
 		this.estimatedMax = 0;
 		this.virgin = true;
-		this.errorBudgetOfSubtree = err;
+		this.errorBudget = err;
 	}
 
 	/**
@@ -59,7 +59,7 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 	 * aggregate value Return true if an update message need to sent, otherwise
 	 * return false
 	 */
-	public void updateEntry(UpdateVectorTask2 msg) {
+	public void updateEntry(UpdateVectorAvg msg) {
 		if (msg.sender == null) {
 			return;
 			// should never happen since we don't acknowledge msg in GAP
@@ -171,8 +171,8 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 		this.totalReqTimeLocal = sum;
 	}
 
-	public UpdateVectorTask2 composeMessage(Node node) {
-		UpdateVectorTask2 outMsg = new UpdateVectorTask2(node, level, parent,
+	public UpdateVectorAvg composeMessage(Node node) {
+		UpdateVectorAvg outMsg = new UpdateVectorAvg(node, level, parent,
 				totalReqTimeInSubtree, totalReqNumInSubtree);
 		return outMsg;
 	}

@@ -6,13 +6,13 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import peersim.EP2300.base.GAPProtocolBase;
-import peersim.EP2300.message.UpdateVector;
-import peersim.EP2300.util.NodeStateVector;
+import peersim.EP2300.message.UpdateVectorMax;
+import peersim.EP2300.util.NodeStateVectorMax;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class GAPNode extends GAPProtocolBase implements Protocol {
+public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 	/*
 	 * These variables are public because they need to be accessible by observer
 	 */
@@ -23,12 +23,12 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	public long maxReqTimeLocal;
 	protected boolean virgin;
 	public long nodeNumInSubtree;
-	public double errorBudgetOfSubtree = 0;
+	public double errorBudget = 0;
 	public long timeWindow = -1;
 
 	// ********************************************
 
-	public SortedMap<Double, NodeStateVector> neighborList;
+	public SortedMap<Double, NodeStateVectorMax> neighborList;
 	public ArrayList<Long> requestList;
 
 	// *********************************************
@@ -48,13 +48,12 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		this.estimatedMax = 0;
 		this.virgin = true;
 		this.nodeNumInSubtree = 1;
-		if (nodeId == 0)
-			this.errorBudgetOfSubtree = err;
+		this.errorBudget = err;
 	}
 
-	public GAPNode(String prefix) {
+	public GAPNodeMax(String prefix) {
 		super(prefix);
-		this.neighborList = new TreeMap<Double, NodeStateVector>();
+		this.neighborList = new TreeMap<Double, NodeStateVectorMax>();
 		this.requestList = new ArrayList<Long>();
 		timeWindow = Configuration.getLong("delta_t");
 	}
@@ -64,7 +63,7 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	 * aggregate value Return true if an update message need to sent, otherwise
 	 * return false
 	 */
-	public void updateEntry(UpdateVector msg) {
+	public void updateEntry(UpdateVectorMax msg) {
 		if (msg.sender == null) {
 			return;
 			// should never happen since we don't acknowledge msg in GAP
@@ -73,20 +72,19 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 		double srcId = msg.sender.getID();
 		double srcLevel = msg.level;
 		long maxReqTime = msg.maxReqTimeInSubtree;
-		long nodeCount = msg.nodeNumInSubtree;
-		NodeStateVector nodeStateVector = null;
+		NodeStateVectorMax nodeStateVector = null;
 		if (srcParent == this.myId) {
 			// message from child (both new and old)
-			nodeStateVector = new NodeStateVector("child", srcLevel,
-					maxReqTime, nodeCount);
+			nodeStateVector = new NodeStateVectorMax("child", srcLevel,
+					maxReqTime);
 		} else if (srcId == this.parent) {
 			// message from parent
-			nodeStateVector = new NodeStateVector("parent", srcLevel,
-					maxReqTime, nodeCount);
+			nodeStateVector = new NodeStateVectorMax("parent", srcLevel,
+					maxReqTime);
 		} else {
 			// message from peer
-			nodeStateVector = new NodeStateVector("peer", srcLevel, maxReqTime,
-					nodeCount);
+			nodeStateVector = new NodeStateVectorMax("peer", srcLevel,
+					maxReqTime);
 		}
 		this.neighborList.put(srcId, nodeStateVector);
 	}
@@ -105,9 +103,9 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 			return false;
 		double minLevel = Double.POSITIVE_INFINITY;
 		double newParent = this.parent;
-		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
+		for (Entry<Double, NodeStateVectorMax> entry : neighborList.entrySet()) {
 			double id = entry.getKey();
-			NodeStateVector nodeStateVector = entry.getValue();
+			NodeStateVectorMax nodeStateVector = entry.getValue();
 			// find a node with smallest level
 
 			if (nodeStateVector.level < minLevel) {
@@ -148,15 +146,11 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	 * Update table according to local value and children value
 	 */
 	public void computeSubtreeValue() {
-		long totalReqTime = 0;
-		long activeReqNum = 0;
 		long maxReqTime = 0;
 		long nodeCount = 1;
-		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
-			double id = entry.getKey();
-			NodeStateVector nodeStateVector = entry.getValue();
+		for (Entry<Double, NodeStateVectorMax> entry : neighborList.entrySet()) {
+			NodeStateVectorMax nodeStateVector = entry.getValue();
 			if (nodeStateVector.status.equals("child")) {
-				nodeCount += nodeStateVector.nodeNum;
 				if (nodeStateVector.maxReqTime > maxReqTime) {
 					maxReqTime = nodeStateVector.maxReqTime;
 				}
@@ -175,18 +169,16 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 	 * @return
 	 */
 	public void computeLocalValue() {
-		long sum = 0;
 		long max = 0;
 		for (int i = 0; i < requestList.size(); i++) {
-			sum += requestList.get(i);
 			if (requestList.get(i) > max)
 				max = requestList.get(i);
 		}
 		this.maxReqTimeLocal = max;
 	}
 
-	public UpdateVector composeMessage(Node node) {
-		UpdateVector outMsg = new UpdateVector(node, level, parent,
+	public UpdateVectorMax composeMessage(Node node) {
+		UpdateVectorMax outMsg = new UpdateVectorMax(node, level, parent,
 				maxReqTimeInSubtree, nodeNumInSubtree);
 		return outMsg;
 	}
@@ -196,12 +188,11 @@ public class GAPNode extends GAPProtocolBase implements Protocol {
 
 	public void printNeighbor() {
 		System.err.println(myId);
-		for (Entry<Double, NodeStateVector> entry : neighborList.entrySet()) {
+		for (Entry<Double, NodeStateVectorMax> entry : neighborList.entrySet()) {
 			double id = entry.getKey();
-			NodeStateVector nodeStateVector = entry.getValue();
+			NodeStateVectorMax nodeStateVector = entry.getValue();
 			System.err.println("\t" + id + "\t==>\t" + nodeStateVector.level
-					+ "\t" + nodeStateVector.status + "\t"
-					+ nodeStateVector.nodeNum);
+					+ "\t" + nodeStateVector.status);
 		}
 	}
 

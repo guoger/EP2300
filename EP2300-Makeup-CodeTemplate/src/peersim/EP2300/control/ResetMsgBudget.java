@@ -3,7 +3,7 @@ package peersim.EP2300.control;
 import java.util.ArrayList;
 
 import peersim.EP2300.tasks.GAPServerWithRateLimit;
-import peersim.EP2300.vector.GAPNode;
+import peersim.EP2300.vector.GAPNodeMax;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
@@ -22,7 +22,7 @@ public class ResetMsgBudget implements Control {
 	@Override
 	public boolean execute() {
 		boolean orphan = false;
-		GAPNode rootNode;
+		GAPNodeMax rootNode;
 		ArrayList orphanList = new ArrayList();
 		for (int i = 0; i < Network.size(); ++i) {
 			Node node = Network.get(i);

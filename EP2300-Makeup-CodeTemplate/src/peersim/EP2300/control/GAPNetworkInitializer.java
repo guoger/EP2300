@@ -1,6 +1,6 @@
 package peersim.EP2300.control;
 
-import peersim.EP2300.vector.GAPNode;
+import peersim.EP2300.vector.GAPNodeMax;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
@@ -24,7 +24,7 @@ public class GAPNetworkInitializer implements Control {
 	@Override
 	public boolean execute() {
 		for (int i = 0; i < Network.size(); i++) {
-			GAPNode prot = (GAPNode) Network.get(i).getProtocol(pid);
+			GAPNodeMax prot = (GAPNodeMax) Network.get(i).getProtocol(pid);
 			double id = Network.get(i).getID();
 			prot.setInit(id, errorObj);
 

@@ -1,6 +1,6 @@
 package peersim.EP2300.control;
 
-import peersim.EP2300.vector.GAPNodeTask2;
+import peersim.EP2300.vector.GAPNodeAvg;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
@@ -22,7 +22,7 @@ public class InitializerTask2 implements Control {
 	@Override
 	public boolean execute() {
 		for (int i = 0; i < Network.size(); i++) {
-			GAPNodeTask2 prot = (GAPNodeTask2) Network.get(i).getProtocol(pid);
+			GAPNodeAvg prot = (GAPNodeAvg) Network.get(i).getProtocol(pid);
 			double id = Network.get(i).getID();
 			prot.setInit(id, errorObj);
 		}

@@ -3,7 +3,7 @@ package peersim.EP2300.control;
 import java.util.ArrayList;
 
 import peersim.EP2300.tasks.GAPExtension1;
-import peersim.EP2300.vector.GAPNode;
+import peersim.EP2300.vector.GAPNodeMax;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
@@ -24,7 +24,7 @@ public class NetworkObserver implements Control {
 		int[] levelList = new int[10];
 		double level;
 		int nodeC = 0;
-		GAPNode rootNode;
+		GAPNodeMax rootNode;
 		GAPExtension1 p;
 		ArrayList<Long> orphanList = new ArrayList<Long>();
 		for (int i = 0; i < Network.size(); ++i) {
@@ -41,7 +41,7 @@ public class NetworkObserver implements Control {
 						.println("Nodes number: " + rootNode.nodeNumInSubtree);
 				System.err.println("Actual network size: " + Network.size());
 				System.err.println("Total error budget: "
-						+ rootNode.errorBudgetOfSubtree);
+						+ rootNode.errorBudget);
 				// rootNode.printNeighbor();
 			}
 			p = ((GAPExtension1) node.getProtocol(protocolID));
