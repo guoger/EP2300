@@ -19,7 +19,8 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 	/**
 	 * Initial message budget. Defaults to 5
 	 */
-	private long lastReportedMax;
+	public long lastReportedMax;
+	public double localErrorBudget;
 
 	public GAPExtension1(String prefix) {
 		super(prefix);
@@ -41,8 +42,7 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 	 * @return
 	 */
 	private boolean testDiff(long newMax) {
-		// System.out.println("error budget is: " + errorBudget);
-		if (Math.abs(newMax - lastReportedMax) >= errorBudget) {
+		if (Math.abs(lastReportedMax - newMax) > localErrorBudget) {
 			lastReportedMax = newMax;
 			return true;
 		} else {
@@ -65,11 +65,11 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			long resTime = newRequest.getResponseTime();
 			this.requestList.add(resTime);
 			scheduleATimeOut(pid, resTime);
-			long newMax = computeSubtreeValue();
-			estimatedMax = newMax;
+			maxReqTimeInSubtree = computeSubtreeValue();
+			estimatedMax = maxReqTimeInSubtree;
 			// System.out.println("Error budget is:" + errorBudget);
-			if (testDiff(newMax)) {
-				sendMsgToParent(node, pid, newMax);
+			if (testDiff(maxReqTimeInSubtree)) {
+				sendMsgToParent(node, pid, maxReqTimeInSubtree);
 			}
 		} else if (event instanceof UpdateVectorMax) {
 			final UpdateVectorMax msg = (UpdateVectorMax) event;
@@ -78,14 +78,15 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			double oldParent = this.parent;
 			updateEntry(msg);
 			findNewParent();
-			long newMax = computeSubtreeValue();
-			estimatedMax = newMax;
+			maxReqTimeInSubtree = computeSubtreeValue();
+			estimatedMax = maxReqTimeInSubtree;
 			if (this.level != oldLevel || this.parent != oldParent) {
-				sendMsgToAllNeighbor(node, pid, newMax);
+				sendMsgToAllNeighbor(node, pid, maxReqTimeInSubtree);
+				localErrorBudget = errorBudget / Math.pow(2, level);
 				return;
 			}
-			if (testDiff(newMax)) {
-				sendMsgToParent(node, pid, newMax);
+			if (testDiff(maxReqTimeInSubtree)) {
+				sendMsgToParent(node, pid, maxReqTimeInSubtree);
 			}
 
 		} else if (event instanceof TimeOut) {
@@ -97,10 +98,10 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			 */
 			final TimeOut msg = (TimeOut) event;
 			this.requestList.remove(msg.element);
-			long newMax = computeSubtreeValue();
-			estimatedMax = newMax;
-			if (testDiff(newMax)) {
-				sendMsgToParent(node, pid, newMax);
+			maxReqTimeInSubtree = computeSubtreeValue();
+			estimatedMax = maxReqTimeInSubtree;
+			if (testDiff(maxReqTimeInSubtree)) {
+				sendMsgToParent(node, pid, maxReqTimeInSubtree);
 			}
 		}
 

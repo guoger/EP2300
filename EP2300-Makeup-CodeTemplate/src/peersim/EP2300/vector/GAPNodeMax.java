@@ -146,7 +146,7 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 	 * Update table according to local value and children value
 	 */
 	public long computeSubtreeValue() {
-		long localMax = computeLocalValue();
+		maxReqTimeLocal = computeLocalValue();
 		long subtreeMax = 0;
 		for (Entry<Double, NodeStateVectorMax> entry : neighborList.entrySet()) {
 			NodeStateVectorMax nodeStateVector = entry.getValue();
@@ -156,8 +156,8 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 				}
 			}
 		}
-		if (localMax > subtreeMax)
-			subtreeMax = localMax;
+		if (maxReqTimeLocal > subtreeMax)
+			subtreeMax = maxReqTimeLocal;
 		return subtreeMax;
 	}
 

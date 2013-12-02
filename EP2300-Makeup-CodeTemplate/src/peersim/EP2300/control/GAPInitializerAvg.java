@@ -25,6 +25,7 @@ public class GAPInitializerAvg implements Control {
 		for (int i = 0; i < Network.size(); i++) {
 			GAPNodeAvg prot = (GAPNodeAvg) Network.get(i).getProtocol(pid);
 			double id = Network.get(i).getID();
+			System.out.println(errorObj);
 			prot.setInit(id, errorObj);
 
 		}

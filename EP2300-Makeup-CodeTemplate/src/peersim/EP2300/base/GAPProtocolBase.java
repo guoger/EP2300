@@ -19,7 +19,7 @@ public class GAPProtocolBase {
 	 * TODO Estimated value of f(t). Write your estimation here for the root
 	 * node.
 	 */
-	protected long estimatedMax;
+	public long estimatedMax;
 
 	public long getEstimatedMax() {
 		return estimatedMax;
