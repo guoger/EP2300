@@ -16,6 +16,7 @@
 
 % use math
 \usepackage{amsmath, amssymb, amsfonts}
+\usepackage{array}
 
 % add graphics
 \usepackage{lscape, tikz, graphicx}
@@ -61,11 +62,13 @@
 % }}}
 \thispagestyle{firststyle}
 \section{Task}
+\label{sec:task1}
 \subsection{Pseudocode}
-\begin{lstlisting}[caption={inspired by \cite{stadler2012protocols}}, numbers=left, frame=single]
+The following pseudo code (listing \ref{lst:1}) is inspired by \cite{stadler2012protocols}. To the existing object A a new object Comm was introduced to handle all message exchange.
+\begin{lstlisting}[caption={Pseudocode for $\widetilde{f}(t)$ with rate control}, label={lst:1}, numbers=left, frame=single]
 messages:
-(ResponseTimeArriveMessage, responseTime)
-(UpdateVector, neighbor)
+(ResponseTimeArriveMessage, responseTime) # similar to local
+(UpdateVector, neighbor) # similar to new and update
 (TimeOut, responseTime)
 
 objects and help functions:
@@ -80,9 +83,14 @@ Comm.send_to_neighbors  # send to all specified neighbors
 Comm.send_to_parent     # send to parent
 find_parent             # among neighbors, choose first with minimum level as
                         #  new parent
+constants:
+DELAY := # fixed time window
+INF := # really big number
+
+global variables:
+msgBudget = 1
 
 procedure GAP( )
-    DELAY = # fixed time window
     Neighbors := empty;
     ResponseTimes := empty;
 
@@ -108,7 +116,7 @@ procedure GAP( )
                 Neighbors.add(neighbor) 
                 (newParent, newLevel) = find_new_parent(Neighbors)
                 A.aggregate_sub_tree(Neighbors)
-                if level != newLevel then
+                if (level != newLevel || parent != newParent) then
                     level = newLevel
                     parent = newParent
                     Comm.send_to_neighbors(Neighbors, level, parent, A.value())
@@ -120,12 +128,21 @@ procedure GAP( )
                 A.aggregate_local_value(ResponseTimes)
                 A.aggregate_sub_tree(Neighbors)
         end switch
-        Comm.send_to_parent(Neighbors, A.value)
+        if (msgBudget > 0) then
+            Comm.send_to_parent(Neighbors, A.value)
+            msgBudget--
+        end if
+        if (msgBudgetReset) then # waiting for another program to change
+            msgBudget = MSG_BUDGET
+        endif
     end while
-    end procedure
+end procedure
+procedure ResetMsgBudget()
+    msgBudget = 1
+end procedure
 \end{lstlisting}
 \subsection{Implementation Details}
-A new base class was implemented which all of the tasks extend: \texttt{peersim.EP2300.vector.GAPNode}. In \texttt{peersim.EP2300.message} three new messages were introduced: \texttt{ResponseTimeArriveMessage}, \texttt{UpdateVector}, \texttt{TimeOut}. The first two roughly equal \texttt{LOCALVAR} and \texttt{UPDATE} from the original technical report (see \cite{stadler2012protocols}).
+A new base class was implemented which all of the tasks extend: \texttt{peersim.EP2300.vector.GAPNode}. In \texttt{peersim.EP2300.message} three new messages were introduced: \texttt{ResponseTimeArriveMessage}, \texttt{UpdateVector}, \texttt{TimeOut}. The first two roughly equal \texttt{LOCALVAR} and \texttt{UPDATE \& NEW} from the original technical report (see \cite{stadler2012protocols}).
 
 Each node stores all its information on it's neighbors as \texttt{NodeStateVector} in a SortMap named \texttt{neighborList}. Details on the nodes response times are stored in the ArrayList \texttt{requestList}. To focus only on the response times in the current time window, every response time is assigned a time out.
 
@@ -138,12 +155,17 @@ For the implementation with rate control, every message send to the parent will 
     \item density plots for r = \{0.2, 0.4, 0.8\} and \{R1,R2\}
 \end{enumerate}
 
-\section*{Task 2}
-\begin{lstlisting}[caption={inspired by \cite{stadler2012protocols}}, numbers=left, frame=single]
+\section{Task}
+\label{sec:task2}
+\subsection{Pseudocode}
+In the following the pseudo code for extension 1 is presented. Different to the first task we do not use a message budget (or message rate). Instead an error budget is used. This error budget is assigned to all nodes. Only when the difference of the aggregate of the subtree to the last communicated version of the same exceeds the error budget, a message is sent.
+
+\begin{lstlisting}[caption={Pseudocode for $\widetilde{f}(t)$ with error budget in $P_1$}, label={lst:2}, numbers=left, frame=single]
 messages:
-(ResponseTimeArriveMessage, responseTime)
-(UpdateVector, neighbor)
+(ResponseTimeArriveMessage, responseTime) # similar to local
+(UpdateVector, neighbor) # similar to new and update
 (TimeOut, responseTime)
+(ErrorBudget, errorBudget)
 
 objects and help functions:
 A       # storing values for and performing aggregation
@@ -151,6 +173,8 @@ Comm    # communication messages
 A.aggregate_local       # aggregate local response times for local statistics
 A.aggregate_sub_tree    # combine local values with children's for statistics
                         #  of the whole subtree
+A.difference_of_subtree # difference of last communicated value versus current
+                        #  communicated value
 A.value                 # values of statistics of subtree (including own)
 Comm.send_to_self       # send a message to the own node with a delay
 Comm.send_to_neighbors  # send to all specified neighbors
@@ -158,8 +182,14 @@ Comm.send_to_parent     # send to parent
 find_parent             # among neighbors, choose first with minimum level as
                         #  new parent
 
+constants:
+DELAY := # fixed time window
+INF := # really big number
+ERROR_BUDGET = # fix number
+
+global variables:
+
 procedure GAP( )
-    DELAY = # fixed time window
     Neighbors := empty;
     ResponseTimes := empty;
 
@@ -175,7 +205,7 @@ procedure GAP( )
     while true do
         read message;
         switch (message)
-            case (ResponseTimeArriveMessage, responseTime)
+            case (ResponseTimeArriveMessage, responseTime):
                 ResponseTimes.add(responseTime)
                 # to keep only a set of responseTimes in cache
                 Comm.send_to_self(DELAY, TimeOut(responseTime))
@@ -185,7 +215,7 @@ procedure GAP( )
                 Neighbors.add(neighbor) 
                 (newParent, newLevel) = find_new_parent(Neighbors)
                 A.aggregate_sub_tree(Neighbors)
-                if level != newLevel then
+                if (level != newLevel || parent != newParent) then
                     level = newLevel
                     parent = newParent
                     Comm.send_to_neighbors(Neighbors, level, parent, A.value())
@@ -197,10 +227,89 @@ procedure GAP( )
                 A.aggregate_local_value(ResponseTimes)
                 A.aggregate_sub_tree(Neighbors)
         end switch
-        Comm.send_to_parent(Neighbors, A.value)
+        if (A.difference_of_subtree() > ERROR_BUDGET) then
+            Comm.send_to_parent(Neighbors, A.value)
+        end if
     end while
-    end procedure
+end procedure
 \end{lstlisting}
+
+\subsection{Implementation Details}
+Similar to the difference between the pseudocode of this and task~\ref{sec:task1} the difference in the code is just the replacement of a depletable message budget with a constant error budget.
+
+\section{Task}
+\subsection{Pseudocode}
+The pseudocode for providing $\widetilde{g}(t)$ under $P_{1}$ is equal to the one provided in section \ref{sec:task2}. The pseudocode for $P_{2}$ is attached below.
+
+\subsection{Calculations}
+\subsection{Problem 3a}
+\textbf{Definitions}
+
+\begin{tabular}{>{$}l<{$} >{$}l<{$} >{$}l<{$}}
+\epsilon_i &:= \text{Local error budget of node i} &\ge 0\\
+\Phi &:= \text{Overall error budget} &\ge 0\\
+prevSum &:= \text{Previous sum of the response times in subtree} &\ge 0 \\
+prevNum &:= \text{Previous number of requests in subtree} &\ge 0\\
+newNum &:= \text{Number of newly arrived reqeusts in subtree} &\ge 0\\
+prevAvg &:= \text{Average of all response times } \frac{prevSum}{prevNum} & \\
+\end{tabular}
+
+\textbf{Aim}
+
+It is the aim of this proof to show how the error budget $\epsilon$ for every node $i$ can be maximized while keeping the global error budget $\Phi$ constant.
+
+\textbf{Proof}
+
+Find maximum value of $\epsilon_i$, so that
+
+\begin{align}
+    \Phi & \ge \left| \frac{prevSum + newNum \cdot \epsilon}{prevNum+newNum}-\frac{prevSum}{prevNum}\right| \label{ineq:phi}\\
+    \epsilon & \le \frac{\left(prevNum+newNum\right)\Phi}{newNum}+\frac{prevSum}{prevNum} \text{ with } prevNum \neq 0 \label{ineq:eps}\\ \notag
+\end{align}
+To find maximum value of $\epsilon$ can be transformed as to find minimum value of the right side of inequation \ref{ineq:eps}. When $prevNum \neq 0$ we have $\frac{prevNum+newNum}{newNum} > 1, \frac{prevSum}{prevNum} \ge 0$, thus $\frac{\left(prevNum + newNum\right) \Phi}{newNum} + \frac{prevSum}{prevNum} \ge \Phi$. When  $prevNum = 0$, the minimum of right side is $\Phi$, thus the minimum value of right side of inequeation is $\Phi$.\\
+%
+\textbf{Conclusion}
+
+It follows $\epsilon_{max} = \Phi$.
+
+\subsection{Problem 3b}
+\textbf{Definitions}
+
+Other than the definitions for problem 3a:
+
+\begin{tabular}{>{$}l<{$} >{$}l<{$} >{$}l<{$}}
+\alpha &:= \text{Factor of relation between error budget and request rate} &\ge 0\\
+\delta_i &:= \text{Number of newly arrived requests in single node in one time unit} &\\
+\end{tabular}
+
+\textbf{Aim}
+
+\textbf{Proof}
+
+find max $\alpha$, so that
+\begin{align}
+\Phi &\ge \frac{prevSum + \sum_i \epsilon_i \cdot \delta_i}{prevNum + \sum_i \delta_i} - \frac{prevSum}{prevNum}\\\notag
+\end{align}
+
+$\epsilon_i = \alpha \cdot \delta_i$
+
+Apply the same schema of problem 3a, we can have
+
+\begin{align}
+\Phi &\ge \frac{\sum_i \epsilon_i \cdot \delta_i}{\sum_i \delta_i}\\\notag
+\end{align}
+substitute $\epsilon_i$ with $\alpha\cdot\delta_i$, we have:
+\begin{align}
+\Phi &\ge \frac{\sum_i \alpha \cdot \delta_i^2}{\sum_i \delta_i}\\
+\alpha &\le \frac{\sum_i \delta_i}{\sum_i \delta_i^2} \cdot \Phi\\
+\alpha_{max} &= ...\\\notag
+\end{align}
+
+\textbf{Conclusion}
+
+Thus error budget for node i is $\alpha_{max} \cdot \delta_i = \delta_i \frac{\sum_i \delta_i}{\sum_i \delta_i^2} \cdot \Phi$
+
+\section{foo}
 
 \begin{figure}[h!]
     \begin{center}
