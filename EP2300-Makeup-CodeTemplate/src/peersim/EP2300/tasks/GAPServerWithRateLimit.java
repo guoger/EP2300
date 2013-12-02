@@ -98,7 +98,7 @@ public class GAPServerWithRateLimit extends GAPNodeMax implements EDProtocol,
 			this.requestList.remove(msg.elementIndex);
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			computeLocalValue();
-			computeSubtreeValue();
+			this.estimatedMax = computeSubtreeValue();
 			if (this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
 				sendMsgToParent(node, pid);

@@ -47,8 +47,8 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 		this.estimatedAverage = 0;
 		this.estimatedMax = 0;
 		this.virgin = true;
-		this.nodeNumInSubtree = 1;
 		this.errorBudget = err;
+		System.out.println("Error Budget is: " + this.errorBudget);
 	}
 
 	public GAPNodeMax(String prefix) {
@@ -145,9 +145,9 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 	/**
 	 * Update table according to local value and children value
 	 */
-	public void computeSubtreeValue() {
+	public long computeSubtreeValue() {
 		long maxReqTime = 0;
-		long nodeCount = 1;
+		long newMax;
 		for (Entry<Double, NodeStateVectorMax> entry : neighborList.entrySet()) {
 			NodeStateVectorMax nodeStateVector = entry.getValue();
 			if (nodeStateVector.status.equals("child")) {
@@ -156,11 +156,10 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 				}
 			}
 		}
-		nodeNumInSubtree = nodeCount;
 		maxReqTimeInSubtree = (maxReqTimeLocal > maxReqTime) ? this.maxReqTimeLocal
 				: maxReqTime;
-
-		estimatedMax = maxReqTimeInSubtree;
+		return maxReqTimeInSubtree;
+		// estimatedMax = maxReqTimeInSubtree;
 	}
 
 	/**
@@ -174,7 +173,7 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 			if (requestList.get(i) > max)
 				max = requestList.get(i);
 		}
-		this.maxReqTimeLocal = max;
+		maxReqTimeLocal = max;
 	}
 
 	public UpdateVectorMax composeMessage(Node node) {

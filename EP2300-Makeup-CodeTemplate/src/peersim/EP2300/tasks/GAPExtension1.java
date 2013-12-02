@@ -21,8 +21,6 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 	 */
 	private long lastReportedMax;
 
-	public UpdateVectorMax msgToSend;
-
 	public GAPExtension1(String prefix) {
 		super(prefix);
 		timeWindow = Configuration.getLong("delta_t");
@@ -43,8 +41,8 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 	 */
 	private boolean testDiff() {
 		// System.out.println("error budget is: " + errorBudget);
-		if (Math.abs(this.estimatedMax - this.lastReportedMax) > errorBudget) {
-			lastReportedMax = this.estimatedMax;
+		if (Math.abs(maxReqTimeInSubtree - lastReportedMax) > errorBudget) {
+			lastReportedMax = maxReqTimeInSubtree;
 			return true;
 		} else {
 			return false;
@@ -67,10 +65,10 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			this.requestList.add(resTime);
 			scheduleATimeOut(pid, resTime);
 			computeLocalValue();
-			computeSubtreeValue();
+			long newMax = computeSubtreeValue();
 			// System.out.println("Error budget is:" + errorBudget);
 			if (testDiff()) {
-				// vector != newvector
+				estimatedMax = newMax;
 				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof UpdateVectorMax) {
@@ -80,14 +78,13 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			double oldParent = this.parent;
 			updateEntry(msg);
 			findNewParent();
-			computeSubtreeValue();
-
+			long newMax = computeSubtreeValue();
 			if (this.level != oldLevel || this.parent != oldParent) {
 				sendMsgToAllNeighbor(node, pid);
 				return;
 			}
 			if (testDiff()) {
-				// vector != newvector
+				estimatedMax = newMax;
 				sendMsgToParent(node, pid);
 			}
 
@@ -101,9 +98,9 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			final TimeOut msg = (TimeOut) event;
 			this.requestList.remove(msg.elementIndex);
 			computeLocalValue();
-			computeSubtreeValue();
+			long newMax = computeSubtreeValue();
 			if (testDiff()) {
-				// vector != newvector
+				estimatedMax = newMax;
 				sendMsgToParent(node, pid);
 			}
 		}
@@ -122,9 +119,13 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 	private void sendMsgToParent(Node node, int pid) {
 		if (this.parent == Double.POSITIVE_INFINITY)
 			return;
-		if (this.virgin == true && this.myId == 0) {
-			sendMsgToAllNeighbor(node, pid);
-			this.virgin = false;
+		if (this.myId == 0) {
+			if (virgin) {
+				sendMsgToAllNeighbor(node, pid);
+				this.virgin = false;
+				return;
+			} else
+				return;
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig
 					.getLinkable(pid));
