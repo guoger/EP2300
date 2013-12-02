@@ -47,7 +47,7 @@
     \fancyfoot[C]{\footnotesize \thepage\ of \pageref{LastPage}}
 }
 % }}}
-
+\setlength{\parskip}{\baselineskip}
 \newcommand{\Author}{Jiannan Guo - ICT-Innovation\\Niklas Semmler - ICT-Innovation}
 \newcommand{\Title}{Network Management Project}
 \newcommand{\note}[1]{\marginnote{\textit{\textbf{#1}} }}
@@ -162,25 +162,12 @@ In the following the pseudo code for extension 1 is presented. Different to the 
 
 \begin{lstlisting}[caption={Pseudocode for $\widetilde{f}(t)$ with error budget in $P_1$}, label={lst:2}, numbers=left, frame=single]
 messages:
-(ResponseTimeArriveMessage, responseTime) # similar to local
-(UpdateVector, neighbor) # similar to new and update
-(TimeOut, responseTime)
-(ErrorBudget, errorBudget)
+[see listing 1]
 
 objects and help functions:
-A       # storing values for and performing aggregation
-Comm    # communication messages
-A.aggregate_local       # aggregate local response times for local statistics
-A.aggregate_sub_tree    # combine local values with children's for statistics
-                        #  of the whole subtree
+[see listing 1]
 A.difference_of_subtree # difference of last communicated value versus current
                         #  communicated value
-A.value                 # values of statistics of subtree (including own)
-Comm.send_to_self       # send a message to the own node with a delay
-Comm.send_to_neighbors  # send to all specified neighbors
-Comm.send_to_parent     # send to parent
-find_parent             # among neighbors, choose first with minimum level as
-                        #  new parent
 
 constants:
 DELAY := # fixed time window
@@ -194,38 +181,14 @@ procedure GAP( )
     ResponseTimes := empty;
 
     if v = root then
-        level = 0
-        parent = 0
-    else
-        level = INF
-        parent = INF
+        [see listing 1]
     end if
 
     A.initiate()
     while true do
         read message;
         switch (message)
-            case (ResponseTimeArriveMessage, responseTime):
-                ResponseTimes.add(responseTime)
-                # to keep only a set of responseTimes in cache
-                Comm.send_to_self(DELAY, TimeOut(responseTime))
-                A.aggregate_local(ResponseTimes)
-                A.aggregate_sub_tree(Neighbors)
-            case (UpdateVector, neighbor):
-                Neighbors.add(neighbor) 
-                (newParent, newLevel) = find_new_parent(Neighbors)
-                A.aggregate_sub_tree(Neighbors)
-                if (level != newLevel || parent != newParent) then
-                    level = newLevel
-                    parent = newParent
-                    Comm.send_to_neighbors(Neighbors, level, parent, A.value())
-                    continue
-                end if
-            # to keep only a set of responseTimes in cache
-            case (TimeOut, responseTime):
-                responses.remove(responseTime)
-                A.aggregate_local_value(ResponseTimes)
-                A.aggregate_sub_tree(Neighbors)
+            [see listing 1]
         end switch
         if (A.difference_of_subtree() > ERROR_BUDGET) then
             Comm.send_to_parent(Neighbors, A.value)
@@ -241,73 +204,6 @@ Similar to the difference between the pseudocode of this and task~\ref{sec:task1
 \subsection{Pseudocode}
 The pseudocode for providing $\widetilde{g}(t)$ under $P_{1}$ is equal to the one provided in section \ref{sec:task2}. The pseudocode for $P_{2}$ is attached below.
 
-\subsection{Calculations}
-\subsection{Problem 3a}
-\textbf{Definitions}
-
-\begin{tabular}{>{$}l<{$} >{$}l<{$} >{$}l<{$}}
-\epsilon_i &:= \text{Local error budget of node i} &\ge 0\\
-\Phi &:= \text{Overall error budget} &\ge 0\\
-prevSum &:= \text{Previous sum of the response times in subtree} &\ge 0 \\
-prevNum &:= \text{Previous number of requests in subtree} &\ge 0\\
-newNum &:= \text{Number of newly arrived reqeusts in subtree} &\ge 0\\
-prevAvg &:= \text{Average of all response times } \frac{prevSum}{prevNum} & \\
-\end{tabular}
-
-\textbf{Aim}
-
-It is the aim of this proof to show how the error budget $\epsilon$ for every node $i$ can be maximized while keeping the global error budget $\Phi$ constant.
-
-\textbf{Proof}
-
-Find maximum value of $\epsilon_i$, so that
-
-\begin{align}
-    \Phi & \ge \left| \frac{prevSum + newNum \cdot \epsilon}{prevNum+newNum}-\frac{prevSum}{prevNum}\right| \label{ineq:phi}\\
-    \epsilon & \le \frac{\left(prevNum+newNum\right)\Phi}{newNum}+\frac{prevSum}{prevNum} \text{ with } prevNum \neq 0 \label{ineq:eps}\\ \notag
-\end{align}
-To find maximum value of $\epsilon$ can be transformed as to find minimum value of the right side of inequation \ref{ineq:eps}. When $prevNum \neq 0$ we have $\frac{prevNum+newNum}{newNum} > 1, \frac{prevSum}{prevNum} \ge 0$, thus $\frac{\left(prevNum + newNum\right) \Phi}{newNum} + \frac{prevSum}{prevNum} \ge \Phi$. When  $prevNum = 0$, the minimum of right side is $\Phi$, thus the minimum value of right side of inequeation is $\Phi$.\\
-%
-\textbf{Conclusion}
-
-It follows $\epsilon_{max} = \Phi$.
-
-\subsection{Problem 3b}
-\textbf{Definitions}
-
-Other than the definitions for problem 3a:
-
-\begin{tabular}{>{$}l<{$} >{$}l<{$} >{$}l<{$}}
-\alpha &:= \text{Factor of relation between error budget and request rate} &\ge 0\\
-\delta_i &:= \text{Number of newly arrived requests in single node in one time unit} &\\
-\end{tabular}
-
-\textbf{Aim}
-
-\textbf{Proof}
-
-find max $\alpha$, so that
-\begin{align}
-\Phi &\ge \frac{prevSum + \sum_i \epsilon_i \cdot \delta_i}{prevNum + \sum_i \delta_i} - \frac{prevSum}{prevNum}\\\notag
-\end{align}
-
-$\epsilon_i = \alpha \cdot \delta_i$
-
-Apply the same schema of problem 3a, we can have
-
-\begin{align}
-\Phi &\ge \frac{\sum_i \epsilon_i \cdot \delta_i}{\sum_i \delta_i}\\\notag
-\end{align}
-substitute $\epsilon_i$ with $\alpha\cdot\delta_i$, we have:
-\begin{align}
-\Phi &\ge \frac{\sum_i \alpha \cdot \delta_i^2}{\sum_i \delta_i}\\
-\alpha &\le \frac{\sum_i \delta_i}{\sum_i \delta_i^2} \cdot \Phi\\
-\alpha_{max} &= ...\\\notag
-\end{align}
-
-\textbf{Conclusion}
-
-Thus error budget for node i is $\alpha_{max} \cdot \delta_i = \delta_i \frac{\sum_i \delta_i}{\sum_i \delta_i^2} \cdot \Phi$
 
 \section{foo}
 
@@ -374,4 +270,74 @@ Thus error budget for node i is $\alpha_{max} \cdot \delta_i = \delta_i \frac{\s
 \bibliographystyle{ieeetr}
 \bibliography{report}
 
+\begin{appendix}
+\section{Calculations}
+\subsection{Distribution of error budget in aggregation via average}
+\textbf{Definitions}\\
+\begin{tabular}{>{$}l<{$} >{$}l<{$} >{$}l<{$}}
+\epsilon &:= \text{Local error budget of a node} &\ge 0\\
+\Phi &:= \text{Overall error budget} &\ge 0\\
+X &:= \text{Previous sum of the response times in subtree} &\ge 0 \\
+Y &:= \text{Previous number of requests in subtree} &\ge 0\\
+\Delta Y &:= \text{Number of newly arrived reqeusts in subtree} &\ge 0\\
+\end{tabular}
+\textbf{Aim}\\
+It is the aim of this proof to show how the error budget $\epsilon$ for every node $i$ can be maximized ($\epsilon_{max}$) while keeping the global error budget $\Phi$ constant. The aggregation operation in this case is averaging of the response times of all requests.
+
+\noindent \textbf{Proof}\\
+\begin{align}
+\Phi & \ge \left| \frac{X + \Delta Y \cdot \epsilon}{Y+\Delta Y}-\frac{X}{Y}\right| \label{ineq:phi}\\
+\epsilon & \le
+\begin{cases}
+\frac{\left(Y+\Delta Y\right)\Phi}{\Delta Y}+\frac{X}{Y} & \text{if } Y \neq 0\\
+\Phi & \text{if } Y = 0
+\end{cases}
+\label{ineq:eps}\\ \notag
+\end{align}
+The task to find maximum value of $\epsilon$ can be transformed to finding minimum value of the right side of inequation \ref{ineq:eps}.
+
+\noindent When $Y \neq 0$ we have
+\[\frac{Y+\Delta Y}{\Delta Y} > 1, \frac{X}{Y} \ge 0\]
+thus
+\[\frac{\left(Y + \Delta Y\right) \Phi}{\Delta Y} + \frac{X}{Y} \ge \Phi\]
+When  $Y = 0$, the minimum of right side is $\Phi$, thus the minimum value of right side of inequeation is $\Phi$. 
+
+\noindent It follows $\epsilon_{max} = \Phi$.
+\newpage
+\subsection{Distribution of error budget based on message rate}
+\textbf{Definitions}\\
+Other than the definitions for problem 3a:\\
+\begin{tabular}{>{$}l<{$} >{$}l<{$} >{$}l<{$}}
+\alpha &:= \text{Factor of relation between error budget and request rate} &\ge 0\\
+\delta &:= \text{Number of newly arrived requests in a node per time unit} &\\
+\end{tabular}
+\textbf{Aim}\\
+The aim of this proof is to find the maximum factor $\alpha$ relating the request rate $\delta_i$ with the the error budget $\epsilon$.
+
+\noindent \textbf{Proof}\\
+For every node $i$ with the $S(i)$ denoting all nodes that are direct children of $i$ in the network and i itself.
+\begin{align}
+\left|
+\begin{array}{ll}
+\Phi \ge& \frac{X + \sum_{j \in S(i)} \epsilon_j \cdot \delta_j}{Y + \sum_{j \in S(i)} \delta_j} - \frac{X}{Y}\\
+\epsilon_i =& \alpha \cdot \delta_i
+\end{array}
+\right|\\\notag
+\end{align}
+Applying the same schema of problem 3a, we can have\\
+\begin{align}
+\Phi &\ge \frac{\sum_{j \in S(i)} \epsilon_j \cdot \delta_j}{\sum_{j \in S(i)} \delta_j}\\\notag
+\end{align}
+substitute $\epsilon_i$ with $\alpha\cdot\delta_i$, we have:\\
+\begin{align}
+\Phi &\ge \frac{\sum_{j \in S(i)} \alpha \cdot \delta_j^2}{\sum_{j \in S(i)} \delta_j}\\
+\alpha &\le \frac{\sum_{j \in S(i)} \delta_j}{\sum_{j \in S(i)} \delta_j^2} \cdot \Phi\\\notag
+\end{align}
+Hence the max factor is:\\
+\begin{align}
+\alpha_{max} &= \frac{\sum_{j \in S(i)} \delta_j}{\sum_{j \in S(i)} \delta_j^2} \cdot \Phi\\\notag
+\end{align}
+
+\noindent Thus error budget for node i is $\alpha_{max} \cdot \delta_i = \delta_i \frac{\sum_{j \in S(i)} \delta_j}{\sum_{j \in S(i)} \delta_j^2} \cdot \Phi$
+\end{appendix}
 \end{document}
