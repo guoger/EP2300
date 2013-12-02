@@ -120,7 +120,7 @@ public class GAPExtension2 extends GAPNodeAvg implements EDProtocol,
 			lastReportedEst = this.lastReportedTotalResponseTime
 					/ this.lastReportedTotalNum;
 		}
-		if (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudget) {
+		if (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudgetInSubtree) {
 			lastReportedTotalNum = totalReqNumInSubtree;
 			lastReportedTotalResponseTime = totalReqTimeInSubtree;
 			return true;
