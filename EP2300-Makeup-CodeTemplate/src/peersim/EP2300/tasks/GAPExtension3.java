@@ -23,7 +23,7 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 
 	private double lastReportedTotalResponseTime;
 	private double lastReportedTotalNum;
-	private double factor;
+	private float factor;
 
 	public GAPExtension3(String prefix) {
 		super(prefix);
@@ -154,7 +154,7 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 			factor = 0;
 			return;
 		}
-		factor = dividend / divisor;
+		factor = (float) dividend / (float) divisor;
 	}
 
 	private void reassignErrorObj(Node node, int pid) {
