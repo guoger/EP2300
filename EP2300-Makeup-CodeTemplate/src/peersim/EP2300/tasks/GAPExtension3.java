@@ -157,7 +157,7 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 		factor = (float) dividend / (float) divisor;
 	}
 
-	private void reassignErrorObj(Node node, int pid) {
+	public void reassignErrorObj(Node node, int pid) {
 		if (this.neighborList == null)
 			return;
 		computeFactor();
@@ -195,7 +195,6 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 			final ResponseTimeArriveMessage newRequest = (ResponseTimeArriveMessage) event;
 			long resTime = newRequest.getResponseTime();
 			requestList.add(resTime);
-			double oldRate = totalReqNumInSubtree;
 			// System.out.println(requestList);
 			scheduleATimeOut(pid, resTime);
 			// System.out.print("Load change: " + this.value);
@@ -216,7 +215,6 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 			final UpdateVectorAvg msg = (UpdateVectorAvg) event;
 			double oldLevel = this.level;
 			double oldParent = this.parent;
-			double oldRate = totalReqNumInSubtree;
 			updateEntry(msg);
 			findNewParent();
 			computeSubtreeValue();
@@ -226,10 +224,6 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 			}
 			if (testDiff()) {
 				sendMsgToParent(node, pid);
-			}
-
-			if (this.totalReqNumInSubtree != oldRate) {
-				reassignErrorObj(node, pid);
 			}
 		} else if (event instanceof TimeOut) {
 			// receive a time out message, reset aggregate value of
@@ -246,15 +240,15 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof ErrorBudget) {
+			System.err.println("Receive new error budget!");
 			final ErrorBudget msg = (ErrorBudget) event;
 			this.errorBudgetInSubtree = msg.errorBudget;
-			reassignErrorObj(node, pid);
+			// reassignErrorObj(node, pid);
 		}
 	}
 
 	@Override
 	public void nextCycle(Node node, int protocolID) {
-		// Implement your cycle-driven code for task 2 here
 
 	}
 
