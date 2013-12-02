@@ -146,20 +146,19 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 	 * Update table according to local value and children value
 	 */
 	public long computeSubtreeValue() {
-		long maxReqTime = 0;
-		long newMax;
+		long localMax = computeLocalValue();
+		long subtreeMax = 0;
 		for (Entry<Double, NodeStateVectorMax> entry : neighborList.entrySet()) {
 			NodeStateVectorMax nodeStateVector = entry.getValue();
 			if (nodeStateVector.status.equals("child")) {
-				if (nodeStateVector.maxReqTime > maxReqTime) {
-					maxReqTime = nodeStateVector.maxReqTime;
+				if (nodeStateVector.maxReqTime > subtreeMax) {
+					subtreeMax = nodeStateVector.maxReqTime;
 				}
 			}
 		}
-		maxReqTimeInSubtree = (maxReqTimeLocal > maxReqTime) ? this.maxReqTimeLocal
-				: maxReqTime;
-		return maxReqTimeInSubtree;
-		// estimatedMax = maxReqTimeInSubtree;
+		if (localMax > subtreeMax)
+			subtreeMax = localMax;
+		return subtreeMax;
 	}
 
 	/**
@@ -167,18 +166,19 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 	 * 
 	 * @return
 	 */
-	public void computeLocalValue() {
+	public long computeLocalValue() {
 		long max = 0;
 		for (int i = 0; i < requestList.size(); i++) {
-			if (requestList.get(i) > max)
-				max = requestList.get(i);
+			long value = requestList.get(i);
+			if (value > max)
+				max = value;
 		}
-		maxReqTimeLocal = max;
+		return max;
 	}
 
 	public UpdateVectorMax composeMessage(Node node) {
 		UpdateVectorMax outMsg = new UpdateVectorMax(node, level, parent,
-				maxReqTimeInSubtree, nodeNumInSubtree);
+				maxReqTimeInSubtree);
 		return outMsg;
 	}
 

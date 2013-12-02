@@ -12,7 +12,7 @@ public class UpdateVectorMax {
 	final public long maxReqTimeInSubtree;
 
 	public UpdateVectorMax(Node sender, double level, double parent,
-			long maxReqTimeInSubtree, long nodeNumInSubtree) {
+			long maxReqTimeInSubtree) {
 		this.sender = sender;
 		this.level = level;
 		this.parent = parent;

@@ -23,7 +23,7 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 
 	private double lastReportedTotalResponseTime;
 	private double lastReportedTotalNum;
-	private double factor;
+	private float factor;
 
 	public GAPExtension3(String prefix) {
 		super(prefix);
@@ -154,13 +154,14 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 			factor = 0;
 			return;
 		}
-		factor = dividend / divisor;
+		factor = (float) dividend / (float) divisor;
 	}
 
 	private void reassignErrorObj(Node node, int pid) {
 		if (this.neighborList == null)
 			return;
 		computeFactor();
+		System.out.println("New factor: " + this.factor);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));
 		for (int i = 0; i < linkable.degree(); ++i) {
@@ -174,6 +175,7 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 			if (state.status.equals("child")) {
 				double errToAssign = errorBudgetInSubtree * factor
 						* state.totalReqNum;
+				System.out.println(errToAssign);
 				ErrorBudget msg = new ErrorBudget(node, errToAssign);
 				InstantaneousTransport transport = new InstantaneousTransport();
 				transport.send(node, peer, msg, pid);
@@ -237,7 +239,7 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 			 * depending on the approach to realize node expiration
 			 */
 			final TimeOut msg = (TimeOut) event;
-			this.requestList.remove(msg.elementIndex);
+			this.requestList.remove(msg.element);
 			computeLocalValue();
 			computeSubtreeValue();
 			if (testDiff()) {
