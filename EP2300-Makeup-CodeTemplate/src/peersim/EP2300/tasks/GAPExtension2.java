@@ -175,7 +175,7 @@ public class GAPExtension2 extends GAPNodeAvg implements EDProtocol,
 			 * depending on the approach to realize node expiration
 			 */
 			final TimeOut msg = (TimeOut) event;
-			this.requestList.remove(msg.elementIndex);
+			this.requestList.remove(msg.element);
 			computeLocalValue();
 			computeSubtreeValue();
 			if (testDiff()) {

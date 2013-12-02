@@ -23,6 +23,7 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 
 	public GAPExtension1(String prefix) {
 		super(prefix);
+		lastReportedMax = 0;
 		timeWindow = Configuration.getLong("delta_t");
 	}
 
@@ -39,10 +40,10 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 	 * 
 	 * @return
 	 */
-	private boolean testDiff() {
+	private boolean testDiff(long newMax) {
 		// System.out.println("error budget is: " + errorBudget);
-		if (Math.abs(maxReqTimeInSubtree - lastReportedMax) > errorBudget) {
-			lastReportedMax = maxReqTimeInSubtree;
+		if (Math.abs(newMax - lastReportedMax) > errorBudget) {
+			lastReportedMax = newMax;
 			return true;
 		} else {
 			return false;
@@ -64,12 +65,11 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			long resTime = newRequest.getResponseTime();
 			this.requestList.add(resTime);
 			scheduleATimeOut(pid, resTime);
-			computeLocalValue();
 			long newMax = computeSubtreeValue();
 			// System.out.println("Error budget is:" + errorBudget);
-			if (testDiff()) {
+			if (testDiff(newMax)) {
 				estimatedMax = newMax;
-				sendMsgToParent(node, pid);
+				sendMsgToParent(node, pid, newMax);
 			}
 		} else if (event instanceof UpdateVectorMax) {
 			final UpdateVectorMax msg = (UpdateVectorMax) event;
@@ -80,12 +80,12 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			findNewParent();
 			long newMax = computeSubtreeValue();
 			if (this.level != oldLevel || this.parent != oldParent) {
-				sendMsgToAllNeighbor(node, pid);
+				sendMsgToAllNeighbor(node, pid, newMax);
 				return;
 			}
-			if (testDiff()) {
+			if (testDiff(newMax)) {
 				estimatedMax = newMax;
-				sendMsgToParent(node, pid);
+				sendMsgToParent(node, pid, newMax);
 			}
 
 		} else if (event instanceof TimeOut) {
@@ -96,15 +96,20 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			 * depending on the approach to realize node expiration
 			 */
 			final TimeOut msg = (TimeOut) event;
-			this.requestList.remove(msg.elementIndex);
-			computeLocalValue();
+			this.requestList.remove(msg.element);
 			long newMax = computeSubtreeValue();
-			if (testDiff()) {
+			if (testDiff(newMax)) {
 				estimatedMax = newMax;
-				sendMsgToParent(node, pid);
+				sendMsgToParent(node, pid, newMax);
 			}
 		}
 
+	}
+
+	public UpdateVectorMax composeMessage(Node node, long newMax) {
+		UpdateVectorMax outMsg = new UpdateVectorMax(node, level, parent,
+				newMax);
+		return outMsg;
 	}
 
 	private void scheduleATimeOut(int pid, long element) {
@@ -116,12 +121,12 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 		transport.send(null, dest, timeOut, pid);
 	}
 
-	private void sendMsgToParent(Node node, int pid) {
+	private void sendMsgToParent(Node node, int pid, long newMax) {
 		if (this.parent == Double.POSITIVE_INFINITY)
 			return;
 		if (this.myId == 0) {
 			if (virgin) {
-				sendMsgToAllNeighbor(node, pid);
+				sendMsgToAllNeighbor(node, pid, newMax);
 				this.virgin = false;
 				return;
 			} else
@@ -129,7 +134,7 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig
 					.getLinkable(pid));
-			UpdateVectorMax newMessage = composeMessage(node);
+			UpdateVectorMax newMessage = composeMessage(node, newMax);
 			for (int i = 0; i < linkable.degree(); ++i) {
 				Node peer = linkable.getNeighbor(i);
 				if (peer.getID() == this.parent && peer.isUp()) {
@@ -147,11 +152,11 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 	 * @param node
 	 * @param pid
 	 */
-	private void sendMsgToAllNeighbor(Node node, int pid) {
+	private void sendMsgToAllNeighbor(Node node, int pid, long newMax) {
 		// System.out.println("Have msg budget" + this.msgBudget);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));
-		UpdateVectorMax newMessage = composeMessage(node);
+		UpdateVectorMax newMessage = composeMessage(node, newMax);
 		if (linkable.degree() > 0) {
 			for (int i = 0; i < linkable.degree(); ++i) {
 				Node peer = linkable.getNeighbor(i);

@@ -62,9 +62,9 @@ public class GAPServerWithRateLimit extends GAPNodeMax implements EDProtocol,
 			this.requestList.add(resTime);
 			scheduleATimeOut(pid, resTime);
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
-			computeLocalValue();
-			computeSubtreeValue();
+			this.maxReqTimeInSubtree = computeSubtreeValue();
 			if (this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+				this.estimatedMax = this.maxReqTimeInSubtree;
 				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
@@ -76,13 +76,15 @@ public class GAPServerWithRateLimit extends GAPNodeMax implements EDProtocol,
 			double oldParent = this.parent;
 			updateEntry(msg);
 			findNewParent();
-			computeSubtreeValue();
+			this.maxReqTimeInSubtree = computeSubtreeValue();
 
 			if (this.level != oldLevel || this.parent != oldParent) {
+				this.estimatedMax = this.maxReqTimeInSubtree;
 				sendMsgToAllNeighbor(node, pid);
 				return;
 			}
 			if (this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+				this.estimatedMax = this.maxReqTimeInSubtree;
 				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
@@ -95,11 +97,12 @@ public class GAPServerWithRateLimit extends GAPNodeMax implements EDProtocol,
 			 * depending on the approach to realize node expiration
 			 */
 			final TimeOut msg = (TimeOut) event;
-			this.requestList.remove(msg.elementIndex);
+			this.requestList.remove(msg.element);
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			computeLocalValue();
-			this.estimatedMax = computeSubtreeValue();
+			this.maxReqTimeInSubtree = computeSubtreeValue();
 			if (this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
+				this.estimatedMax = this.maxReqTimeInSubtree;
 				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
