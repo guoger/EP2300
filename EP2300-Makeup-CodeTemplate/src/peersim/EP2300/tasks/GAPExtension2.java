@@ -2,11 +2,11 @@ package peersim.EP2300.tasks;
 
 import peersim.EP2300.message.ResponseTimeArriveMessage;
 import peersim.EP2300.message.TimeOut;
-import peersim.EP2300.message.UpdateVectorTask2;
+import peersim.EP2300.message.UpdateVectorAvg;
 import peersim.EP2300.transport.ConfigurableDelayTransport;
 import peersim.EP2300.transport.InstantaneousTransport;
 import peersim.EP2300.util.NodeUtils;
-import peersim.EP2300.vector.GAPNodeTask2;
+import peersim.EP2300.vector.GAPNodeAvg;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
 import peersim.config.FastConfig;
@@ -14,7 +14,7 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 
-public class GAPExtension2 extends GAPNodeTask2 implements EDProtocol,
+public class GAPExtension2 extends GAPNodeAvg implements EDProtocol,
 		CDProtocol {
 
 	private double lastReportedTotalResponseTime;
@@ -72,7 +72,7 @@ public class GAPExtension2 extends GAPNodeTask2 implements EDProtocol,
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig
 					.getLinkable(pid));
-			UpdateVectorTask2 newMessage = composeMessage(node);
+			UpdateVectorAvg newMessage = composeMessage(node);
 			for (int i = 0; i < linkable.degree(); ++i) {
 				Node peer = linkable.getNeighbor(i);
 				if (peer.getID() == this.parent && peer.isUp()) {
@@ -94,7 +94,7 @@ public class GAPExtension2 extends GAPNodeTask2 implements EDProtocol,
 		// System.out.println("Have msg budget" + this.msgBudget);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));
-		UpdateVectorTask2 newMessage = composeMessage(node);
+		UpdateVectorAvg newMessage = composeMessage(node);
 		if (linkable.degree() > 0) {
 			for (int i = 0; i < linkable.degree(); ++i) {
 				Node peer = linkable.getNeighbor(i);
@@ -120,7 +120,7 @@ public class GAPExtension2 extends GAPNodeTask2 implements EDProtocol,
 			lastReportedEst = this.lastReportedTotalResponseTime
 					/ this.lastReportedTotalNum;
 		}
-		if (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudgetOfSubtree) {
+		if (Math.abs(lastReportedEst - this.estimatedAverage) > errorBudgetInSubtree) {
 			lastReportedTotalNum = totalReqNumInSubtree;
 			lastReportedTotalResponseTime = totalReqTimeInSubtree;
 			return true;
@@ -153,8 +153,8 @@ public class GAPExtension2 extends GAPNodeTask2 implements EDProtocol,
 			/*
 			 * Message type vector, external message
 			 */
-		} else if (event instanceof UpdateVectorTask2) {
-			final UpdateVectorTask2 msg = (UpdateVectorTask2) event;
+		} else if (event instanceof UpdateVectorAvg) {
+			final UpdateVectorAvg msg = (UpdateVectorAvg) event;
 			double oldLevel = this.level;
 			double oldParent = this.parent;
 			updateEntry(msg);

@@ -6,13 +6,13 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import peersim.EP2300.base.GAPProtocolBase;
-import peersim.EP2300.message.UpdateVectorTask2;
-import peersim.EP2300.util.NodeStateVectorTask2;
+import peersim.EP2300.message.UpdateVectorAvg;
+import peersim.EP2300.util.NodeStateVectorAvg;
 import peersim.config.Configuration;
 import peersim.core.Node;
 import peersim.core.Protocol;
 
-public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
+public class GAPNodeAvg extends GAPProtocolBase implements Protocol {
 
 	public double parent;
 	public double myId;
@@ -22,15 +22,15 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 	public long totalReqNumInSubtree;
 	public long totalReqNumLocal;
 	protected boolean virgin;
-	public double errorBudgetOfSubtree = 0;
+	public double errorBudgetInSubtree = 0;
 	public long timeWindow = -1;
 
-	public SortedMap<Double, NodeStateVectorTask2> neighborList;
+	public SortedMap<Double, NodeStateVectorAvg> neighborList;
 	public ArrayList<Long> requestList;
 
-	public GAPNodeTask2(String prefix) {
+	public GAPNodeAvg(String prefix) {
 		super(prefix);
-		this.neighborList = new TreeMap<Double, NodeStateVectorTask2>();
+		this.neighborList = new TreeMap<Double, NodeStateVectorAvg>();
 		this.requestList = new ArrayList<Long>();
 		timeWindow = Configuration.getLong("delta_t");
 	}
@@ -51,7 +51,7 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 		this.estimatedAverage = 0;
 		this.estimatedMax = 0;
 		this.virgin = true;
-		this.errorBudgetOfSubtree = err;
+		this.errorBudgetInSubtree = err;
 	}
 
 	/**
@@ -59,7 +59,7 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 	 * aggregate value Return true if an update message need to sent, otherwise
 	 * return false
 	 */
-	public void updateEntry(UpdateVectorTask2 msg) {
+	public void updateEntry(UpdateVectorAvg msg) {
 		if (msg.sender == null) {
 			return;
 			// should never happen since we don't acknowledge msg in GAP
@@ -69,18 +69,18 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 		double srcLevel = msg.level;
 		long totalReqTime = msg.totalReqTimeInSubtree;
 		long totalReqNum = msg.totalReqNumInSubtree;
-		NodeStateVectorTask2 nodeStateVector = null;
+		NodeStateVectorAvg nodeStateVector = null;
 		if (srcParent == this.myId) {
 			// message from child (both new and old)
-			nodeStateVector = new NodeStateVectorTask2("child", srcLevel,
+			nodeStateVector = new NodeStateVectorAvg("child", srcLevel,
 					totalReqTime, totalReqNum);
 		} else if (srcId == this.parent) {
 			// message from parent
-			nodeStateVector = new NodeStateVectorTask2("parent", srcLevel,
+			nodeStateVector = new NodeStateVectorAvg("parent", srcLevel,
 					totalReqTime, totalReqNum);
 		} else {
 			// message from peer
-			nodeStateVector = new NodeStateVectorTask2("peer", srcLevel,
+			nodeStateVector = new NodeStateVectorAvg("peer", srcLevel,
 					totalReqTime, totalReqNum);
 		}
 		this.neighborList.put(srcId, nodeStateVector);
@@ -92,13 +92,11 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 			return false;
 		if (this.neighborList.isEmpty())
 			return false;
-		boolean findParent = false;
 		double minLevel = Double.POSITIVE_INFINITY;
 		double newParent = this.parent;
-		for (Entry<Double, NodeStateVectorTask2> entry : neighborList
-				.entrySet()) {
+		for (Entry<Double, NodeStateVectorAvg> entry : neighborList.entrySet()) {
 			double id = entry.getKey();
-			NodeStateVectorTask2 nodeStateVector = entry.getValue();
+			NodeStateVectorAvg nodeStateVector = entry.getValue();
 			// find a node with smallest level
 
 			if (nodeStateVector.level < minLevel) {
@@ -138,11 +136,8 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 	public void computeSubtreeValue() {
 		long totalReqTime = 0;
 		long activeReqNum = 0;
-		long maxReqTime = 0;
-		for (Entry<Double, NodeStateVectorTask2> entry : neighborList
-				.entrySet()) {
-			double id = entry.getKey();
-			NodeStateVectorTask2 nodeStateVector = entry.getValue();
+		for (Entry<Double, NodeStateVectorAvg> entry : neighborList.entrySet()) {
+			NodeStateVectorAvg nodeStateVector = entry.getValue();
 			if (nodeStateVector.status.equals("child")) {
 				totalReqTime += nodeStateVector.totalReqTime;
 				activeReqNum += nodeStateVector.totalReqNum;
@@ -171,8 +166,8 @@ public class GAPNodeTask2 extends GAPProtocolBase implements Protocol {
 		this.totalReqTimeLocal = sum;
 	}
 
-	public UpdateVectorTask2 composeMessage(Node node) {
-		UpdateVectorTask2 outMsg = new UpdateVectorTask2(node, level, parent,
+	public UpdateVectorAvg composeMessage(Node node) {
+		UpdateVectorAvg outMsg = new UpdateVectorAvg(node, level, parent,
 				totalReqTimeInSubtree, totalReqNumInSubtree);
 		return outMsg;
 	}

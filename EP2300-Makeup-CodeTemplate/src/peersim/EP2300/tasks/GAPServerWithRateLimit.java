@@ -2,11 +2,11 @@ package peersim.EP2300.tasks;
 
 import peersim.EP2300.message.ResponseTimeArriveMessage;
 import peersim.EP2300.message.TimeOut;
-import peersim.EP2300.message.UpdateVector;
+import peersim.EP2300.message.UpdateVectorMax;
 import peersim.EP2300.transport.ConfigurableDelayTransport;
 import peersim.EP2300.transport.InstantaneousTransport;
 import peersim.EP2300.util.NodeUtils;
-import peersim.EP2300.vector.GAPNode;
+import peersim.EP2300.vector.GAPNodeMax;
 import peersim.cdsim.CDProtocol;
 import peersim.config.Configuration;
 import peersim.config.FastConfig;
@@ -14,7 +14,7 @@ import peersim.core.Linkable;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 
-public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
+public class GAPServerWithRateLimit extends GAPNodeMax implements EDProtocol,
 		CDProtocol {
 
 	/**
@@ -24,7 +24,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 	// private long timeWindow = 0;
 
 	protected double msgBudget;
-	public UpdateVector msgToSend;
+	public UpdateVectorMax msgToSend;
 
 	public GAPServerWithRateLimit(String prefix) {
 		super(prefix);
@@ -68,8 +68,8 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 				// vector != newvector
 				sendMsgToParent(node, pid);
 			}
-		} else if (event instanceof UpdateVector) {
-			final UpdateVector msg = (UpdateVector) event;
+		} else if (event instanceof UpdateVectorMax) {
+			final UpdateVectorMax msg = (UpdateVectorMax) event;
 			// store old data
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			double oldLevel = this.level;
@@ -98,7 +98,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 			this.requestList.remove(msg.elementIndex);
 			long oldMaxReqTimeInSubtree = this.maxReqTimeInSubtree;
 			computeLocalValue();
-			computeSubtreeValue();
+			this.estimatedMax = computeSubtreeValue();
 			if (this.maxReqTimeInSubtree != oldMaxReqTimeInSubtree) {
 				// vector != newvector
 				sendMsgToParent(node, pid);
@@ -125,7 +125,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		} else {
 			Linkable linkable = (Linkable) node.getProtocol(FastConfig
 					.getLinkable(pid));
-			UpdateVector newMessage = composeMessage(node);
+			UpdateVectorMax newMessage = composeMessage(node);
 			for (int i = 0; i < linkable.degree(); ++i) {
 				if (msgBudget < 1)
 					return; // no message budget left, simply return
@@ -150,7 +150,7 @@ public class GAPServerWithRateLimit extends GAPNode implements EDProtocol,
 		// System.out.println("Have msg budget" + this.msgBudget);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));
-		UpdateVector newMessage = composeMessage(node);
+		UpdateVectorMax newMessage = composeMessage(node);
 		if (linkable.degree() > 0) {
 			for (int i = 0; i < linkable.degree(); ++i) {
 				if (msgBudget < 1)
