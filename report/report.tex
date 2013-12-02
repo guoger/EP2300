@@ -154,6 +154,49 @@ For the implementation with rate control, every message send to the parent will 
     \item trade-off plots for both \{R1,R2\} (and all rate options?? 0.1,0.2,0.4,0.8,1.6)
     \item density plots for r = \{0.2, 0.4, 0.8\} and \{R1,R2\}
 \end{enumerate}
+\subsection{plots}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.6]{plots/task1/time_series_R1}
+    \end{center}
+    \caption{Time series for pattern R1}
+    \label{fig:task1_ts_r1}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.6]{plots/task1/time_series_R2}
+    \end{center}
+    \caption{Time series for pattern R2}
+    \label{fig:task1_ts_r1}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.6]{plots/task1/density_R1}
+    \end{center}
+    \caption{Density plot for pattern R1}
+    \label{fig:task1_density_r1}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{plots/task1/density_R2}
+    \end{center}
+    \caption{Density plot for pattern R2}
+    \label{fig:task1_density_r2}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{plots/task1/trade_off_R1}
+    \end{center}
+    \caption{Trade-off plot for pattern R1}
+    \label{fig:task1_trade_off_r1}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{plots/task1/trade_off_R2}
+    \end{center}
+    \caption{Trade-off plot for pattern R2}
+    \label{fig:task1_trade_off_r2}
+\end{figure}
 
 \section{Task}
 \label{sec:task2}
@@ -200,20 +243,93 @@ end procedure
 \subsection{Implementation Details}
 Similar to the difference between the pseudocode of this and task~\ref{sec:task1} the difference in the code is just the replacement of a depletable message budget with a constant error budget.
 
+\subsection{plots}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.6]{plots/task2/time_series_R1}
+    \end{center}
+    \caption{Time series for pattern R1}
+    \label{fig:task2_ts_r1}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.6]{plots/task2/time_series_R2}
+    \end{center}
+    \caption{Time series for pattern R2}
+    \label{fig:task2_ts_r1}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.6]{plots/task2/density_R1}
+    \end{center}
+    \caption{Density plot for pattern R1}
+    \label{fig:task2_density_r1}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{plots/task2/density_R2}
+    \end{center}
+    \caption{Density plot for pattern R2}
+    \label{fig:task2_density_r2}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{plots/task2/trade_off_R1}
+    \end{center}
+    \caption{Trade-off plot for pattern R1}
+    \label{fig:task2_trade_off_r1}
+\end{figure}
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{plots/task2/trade_off_R2}
+    \end{center}
+    \caption{Trade-off plot for pattern R2}
+    \label{fig:task2_trade_off_r2}
+\end{figure}
+
 \section{Task}
 \subsection{Pseudocode}
 The pseudocode for providing $\widetilde{g}(t)$ under $P_{1}$ is equal to the one provided in section \ref{sec:task2}. The pseudocode for $P_{2}$ is attached below.
+\begin{lstlisting}[caption={Pseudocode for $\widetilde{f}(t)$ with error budget in $P_1$}, label={lst:2}, numbers=left, frame=single]
+messages:
+[see listing 1]
+(ErrorBudget, errorBudget)
 
+objects and help functions:
+[see listing 1]
+A.difference_of_subtree # difference of last communicated value versus current
+                        #  communicated value
+
+constants:
+DELAY := # fixed time window
+INF := # really big number
+ERROR_BUDGET = # fix number
+
+global variables:
+
+procedure GAP( )
+    Neighbors := empty;
+    ResponseTimes := empty;
+
+    if v = root then
+        [see listing 1]
+    end if
+
+    A.initiate()
+    while true do
+        read message;
+        switch (message)
+            [see listing 1]
+        end switch
+        if (A.difference_of_subtree() > ERROR_BUDGET) then
+            Comm.send_to_parent(Neighbors, A.value)
+        end if
+    end while
+end procedure
+\end{lstlisting}
 
 \section{foo}
 
-\begin{figure}[h!]
-    \begin{center}
-        \includegraphics[scale=0.7]{plots/time_series}
-    \end{center}
-    \caption{Time series plot}
-    \label{fig:ts}
-\end{figure}
 \begin{figure}[h!]
     \begin{center}
         \includegraphics[scale=0.7]{plots/trade_off}
