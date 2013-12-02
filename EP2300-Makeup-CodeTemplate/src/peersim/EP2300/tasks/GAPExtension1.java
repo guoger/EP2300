@@ -42,7 +42,7 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 	 */
 	private boolean testDiff(long newMax) {
 		// System.out.println("error budget is: " + errorBudget);
-		if (Math.abs(newMax - lastReportedMax) > errorBudget) {
+		if (Math.abs(newMax - lastReportedMax) >= errorBudget) {
 			lastReportedMax = newMax;
 			return true;
 		} else {
@@ -66,9 +66,9 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			this.requestList.add(resTime);
 			scheduleATimeOut(pid, resTime);
 			long newMax = computeSubtreeValue();
+			estimatedMax = newMax;
 			// System.out.println("Error budget is:" + errorBudget);
 			if (testDiff(newMax)) {
-				estimatedMax = newMax;
 				sendMsgToParent(node, pid, newMax);
 			}
 		} else if (event instanceof UpdateVectorMax) {
@@ -79,12 +79,12 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			updateEntry(msg);
 			findNewParent();
 			long newMax = computeSubtreeValue();
+			estimatedMax = newMax;
 			if (this.level != oldLevel || this.parent != oldParent) {
 				sendMsgToAllNeighbor(node, pid, newMax);
 				return;
 			}
 			if (testDiff(newMax)) {
-				estimatedMax = newMax;
 				sendMsgToParent(node, pid, newMax);
 			}
 
@@ -98,8 +98,8 @@ public class GAPExtension1 extends GAPNodeMax implements EDProtocol, CDProtocol 
 			final TimeOut msg = (TimeOut) event;
 			this.requestList.remove(msg.element);
 			long newMax = computeSubtreeValue();
+			estimatedMax = newMax;
 			if (testDiff(newMax)) {
-				estimatedMax = newMax;
 				sendMsgToParent(node, pid, newMax);
 			}
 		}

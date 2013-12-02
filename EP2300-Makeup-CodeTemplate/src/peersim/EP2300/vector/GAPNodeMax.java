@@ -169,8 +169,9 @@ public class GAPNodeMax extends GAPProtocolBase implements Protocol {
 	public long computeLocalValue() {
 		long max = 0;
 		for (int i = 0; i < requestList.size(); i++) {
-			if (requestList.get(i) > max)
-				max = requestList.get(i);
+			long value = requestList.get(i);
+			if (value > max)
+				max = value;
 		}
 		return max;
 	}
