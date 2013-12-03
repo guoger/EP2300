@@ -161,7 +161,7 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 		if (this.neighborList == null)
 			return;
 		computeFactor();
-		System.out.println("New factor: " + this.factor);
+		// System.out.println("New factor: " + this.factor);
 		Linkable linkable = (Linkable) node.getProtocol(FastConfig
 				.getLinkable(pid));
 		for (int i = 0; i < linkable.degree(); ++i) {
@@ -175,7 +175,7 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 			if (state.status.equals("child")) {
 				double errToAssign = errorBudgetInSubtree * factor
 						* state.totalReqNum;
-				System.out.println(errToAssign);
+				// System.out.println(errToAssign);
 				ErrorBudget msg = new ErrorBudget(node, errToAssign);
 				InstantaneousTransport transport = new InstantaneousTransport();
 				transport.send(node, peer, msg, pid);
@@ -240,10 +240,11 @@ public class GAPExtension3 extends GAPNodeAvgExt3 implements EDProtocol,
 				sendMsgToParent(node, pid);
 			}
 		} else if (event instanceof ErrorBudget) {
-			System.err.println("Receive new error budget!");
 			final ErrorBudget msg = (ErrorBudget) event;
+			// System.err.println("Receive new error budget!" +
+			// msg.errorBudget);
 			this.errorBudgetInSubtree = msg.errorBudget;
-			// reassignErrorObj(node, pid);
+			reassignErrorObj(node, pid);
 		}
 	}
 

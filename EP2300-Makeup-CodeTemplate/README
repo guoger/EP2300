@@ -8,3 +8,12 @@ After normal compilations, to run the code use the following command, assuming t
 (1) you run from the project root and (2) 'bin' is a folder you store your compiled Java classes.
 
 java -cp libs/djep-1.0.0.jar:libs/jep-2.3.0.jar:bin -ea -javaagent:libs/sizeobj.jar peersim.Simulator main.cfg
+
+======================
+Configuration files:
+RateControl.cfg:    for task1, change r for different message rate
+Ext1.cfg:           for task2, change e for different error objectives
+Ext2.cfg, Ext3.cfg: for task3, change e for different error objectives. Ext2.cfg
+                    is for policy 1 and Ext3.cfg is for policy 2.
+
+In Eclipse, please include javaagent in run configuration
